@@ -9,7 +9,11 @@ class ForceHttps
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!$request->secure() && app()->environment('production')) {
+        if (app()->environment('production')) {
+            // Si la requête est sécurisée ou si le reverse proxy (Render) indique du HTTPS, on continue
+            if ($request->secure() || $request->header('x-forwarded-proto') === 'https') {
+                return $next($request);
+            }
             return redirect()->secure($request->getRequestUri());
         }
         return $next($request);
