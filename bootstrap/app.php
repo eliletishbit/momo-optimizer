@@ -11,6 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Faire confiance à tous les reverse proxies (Render, Cloudflare, AWS, etc.)
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'subscription' => \App\Http\Middleware\CheckSubscription::class,
@@ -22,7 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             '/payment/webhook',
         ]);
 
-          // CORRECT : Enregistrement du middleware pour forcer le HTTPS globalement
+          // Enregistrement du middleware pour forcer le HTTPS globalement
         $middleware->append(\App\Http\Middleware\ForceHttps::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
