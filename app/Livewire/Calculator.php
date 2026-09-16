@@ -36,6 +36,15 @@ class Calculator extends Component
 
     private bool $initialized = false;
 
+    protected function rules(): array
+    {
+        return [
+            'amount' => 'required|numeric|min:100',
+            'country' => 'required|string|max:10',
+            'type' => 'required|string|in:withdrawal,sending',
+        ];
+    }
+
     public function mount()
     {
         $user = Auth::user();
@@ -78,8 +87,9 @@ class Calculator extends Component
             ->toArray();
     }
 
-    public function calculate(FeeOptimizerAdapter $optimizer): void
+    public function calculate(?FeeOptimizerAdapter $optimizer = null): void
     {
+        $optimizer = $optimizer ?? app(FeeOptimizerAdapter::class);
         $this->resetErrorBag();
         $this->errorMessage = null;
         $this->isLoading = true;
@@ -132,16 +142,6 @@ class Calculator extends Component
                 $this->isLoading = false;
                 return;
             }
-
-            $this->errorMessage = 'Ajoutez au moins un moyen de paiement pour utiliser le calculateur.';
-            $this->isLoading = false;
-            return;
-        }
-
-        if ($user->userMethods()->count() < 1) {
-            $this->errorMessage = 'Ajoutez au moins un moyen de paiement pour utiliser le calculateur.';
-            $this->isLoading = false;
-            return;
         }
 
         $validated = $this->validate();
@@ -159,7 +159,16 @@ class Calculator extends Component
             ->values()
             ->toArray();
 
-        if (count($methodIds) < 1) {
+        // Si l'utilisateur n'a pas encore configuré de méthodes pour ce pays,
+        // utiliser toutes les méthodes actives du pays pour lui permettre d'optimiser
+        if (empty($methodIds)) {
+            $methodIds = \App\Models\Method::where('country_code', $this->country)
+                ->whereRaw('is_active = true')
+                ->pluck('id')
+                ->toArray();
+        }
+
+        if (empty($methodIds)) {
             $this->errorMessage = 'Aucun moyen de paiement trouvé pour le pays sélectionné.';
             $this->isLoading = false;
             return;
@@ -280,6 +289,7 @@ class Calculator extends Component
             'userNetworks' => $this->getUserNetworks(),
             'funContent' => $this->results['fun_content'] ?? null,
             'countries' => $countries,
+            'country' => $this->country,
             'currency' => $this->currency,
         ]);
     }

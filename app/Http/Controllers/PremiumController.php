@@ -6,6 +6,8 @@ use FedaPay\FedaPay;
 use FedaPay\Transaction;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Models\OptimizationHistory;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;

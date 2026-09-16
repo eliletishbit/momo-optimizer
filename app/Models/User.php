@@ -69,6 +69,7 @@ class User extends Authenticatable
             'preferred_sending_methods' => 'array',
             'preferences' => 'array',
             'is_admin' => 'boolean',
+            'whatsapp_enabled' => 'boolean',
             'trial_used' => 'integer',
             'last_calculator_use_at' => 'datetime',
             'calculator_use_count_month' => 'integer',
@@ -530,9 +531,8 @@ class User extends Authenticatable
 
     public function canAccessCalculator(): bool
     {
-        $hasMethods = $this->userMethods()->exists();
-        if (!$hasMethods) {
-            return false;
+        if ($this->is_admin) {
+            return true;
         }
 
         if ($this->canUsePayAsYouGo()) {
@@ -549,6 +549,10 @@ class User extends Authenticatable
 
         if ($this->hasActiveFreeTrial()) {
             return true;
+        }
+
+        if ($this->subscription === 'free' || $this->subscription === null) {
+            return !$this->hasExpiredFreeTrial();
         }
 
         if ($this->isDegraded() && $this->subscription === 'free') {

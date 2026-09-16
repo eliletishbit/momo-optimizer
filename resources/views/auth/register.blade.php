@@ -6,11 +6,14 @@
     <div class="space-y-6" x-data="registrationHandler()">
         <!-- Header -->
         <div class="text-center lg:text-left">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold uppercase tracking-wider mb-3">
+                <i class="fas fa-gift text-emerald-600"></i> 14 jours d'essai gratuit inclus
+            </div>
             <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                Rejoignez la révolution
+                Créer votre compte
             </h1>
             <p class="mt-2 text-slate-500 text-base leading-relaxed">
-                Optimisez vos frais de transfert dès aujourd'hui.
+                Rejoignez MomoOpti et optimisez vos transactions dès aujourd'hui.
             </p>
         </div>
 
@@ -21,8 +24,8 @@
                     :class="regType === 'phone' ? 'bg-white text-emerald-700 shadow-md font-bold' : 'text-slate-600 hover:text-slate-900 font-medium'"
                     class="flex-1 py-3 px-4 rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2">
                 <i class="fab fa-whatsapp text-emerald-500 text-lg"></i>
-                <span>WhatsApp / SMS</span>
-                <span class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Rapide</span>
+                <span>Numéro WhatsApp / Téléphone</span>
+                <span class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Direct</span>
             </button>
             <button type="button"
                     @click="setRegType('email')"
@@ -34,7 +37,7 @@
         </div>
 
         <!-- Formulaire d'inscription -->
-        <form method="POST" action="{{ route('register') }}" class="space-y-5" @submit="handleSubmit($event)">
+        <form method="POST" action="{{ route('register') }}" class="space-y-5">
             @csrf
             <input type="hidden" name="registration_type" :value="regType">
 
@@ -73,109 +76,26 @@
             </div>
 
             <!-- ============================================== -->
-            <!-- 🟢 MODE 1 : INSCRIPTION WHATSAPP / SMS (OTP) -->
+            <!-- 🟢 MODE 1 : INSCRIPTION WHATSAPP / TELEPHONE   -->
             <!-- ============================================== -->
             <div x-show="regType === 'phone'" class="space-y-4 pt-1">
-                <!-- Choix du canal (WhatsApp vs SMS) -->
-                <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                        Canal de réception du code
-                    </label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button type="button"
-                                @click="channel = 'whatsapp'"
-                                :class="channel === 'whatsapp' ? 'border-emerald-500 bg-emerald-50/70 text-emerald-800 ring-2 ring-emerald-300/60 font-bold' : 'border-slate-200 bg-white/70 text-slate-600 hover:bg-white'"
-                                class="p-3 rounded-2xl border transition-all duration-200 flex items-center justify-center gap-2 text-sm shadow-sm">
-                            <i class="fab fa-whatsapp text-emerald-600 text-lg"></i>
-                            <span>WhatsApp</span>
-                        </button>
-                        <button type="button"
-                                @click="channel = 'sms'"
-                                :class="channel === 'sms' ? 'border-indigo-500 bg-indigo-50/70 text-indigo-800 ring-2 ring-indigo-300/60 font-bold' : 'border-slate-200 bg-white/70 text-slate-600 hover:bg-white'"
-                                class="p-3 rounded-2xl border transition-all duration-200 flex items-center justify-center gap-2 text-sm shadow-sm">
-                            <i class="fas fa-comment-sms text-indigo-600 text-base"></i>
-                            <span>SMS direct</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Saisie du numéro de téléphone avec indicatif -->
                 <div>
                     <label for="phone_input" class="block text-sm font-semibold text-slate-700 mb-1.5">
-                        <i class="fas fa-mobile-screen mr-2 text-emerald-500"></i>Numéro de téléphone
+                        <i class="fab fa-whatsapp mr-2 text-emerald-500"></i>Numéro WhatsApp / Téléphone
                     </label>
                     <div class="flex rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-sm overflow-hidden focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-200/50 transition-all shadow-sm">
                         <span class="inline-flex items-center px-4 bg-slate-100/80 text-slate-600 font-bold text-sm border-r border-slate-200" x-text="currentPrefix">
                             +229
                         </span>
-                        <input id="phone_input" type="tel" x-model="phoneRaw" @input="clearStatusMessages()"
+                        <input id="phone_input" type="tel" x-model="phoneRaw"
                                class="flex-1 px-4 py-3.5 border-0 focus:ring-0 text-slate-800 placeholder:text-slate-400 bg-transparent text-base"
                                placeholder="Ex : 97 00 00 00">
                     </div>
                     <input type="hidden" name="phone" :value="fullPhone">
-                    @error('phone')
-                        <p class="mt-2 text-sm text-red-600 font-medium flex items-center gap-1">
-                            <i class="fas fa-circle-exclamation"></i> {{ $message }}
-                        </p>
-                    @enderror
-                </div>
-
-                <!-- Bouton d'envoi du code OTP -->
-                <div>
-                    <button type="button"
-                            @click="sendOtp()"
-                            :disabled="isSendingOtp || countdown > 0"
-                            class="w-full py-3.5 px-4 rounded-2xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-md"
-                            :class="countdown > 0 ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' : (channel === 'whatsapp' ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200/60' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200/60')">
-                        <template x-if="isSendingOtp">
-                            <span class="flex items-center gap-2">
-                                <i class="fas fa-spinner fa-spin"></i> Envoi du code...
-                            </span>
-                        </template>
-                        <template x-if="!isSendingOtp && countdown === 0">
-                            <span class="flex items-center gap-2">
-                                <i :class="channel === 'whatsapp' ? 'fab fa-whatsapp text-lg' : 'fas fa-paper-plane'"></i>
-                                <span x-text="otpSent ? 'Renvoyer un nouveau code' : (channel === 'whatsapp' ? 'Envoyer le code par WhatsApp' : 'Envoyer le code par SMS')"></span>
-                            </span>
-                        </template>
-                        <template x-if="!isSendingOtp && countdown > 0">
-                            <span class="flex items-center gap-1">
-                                <i class="far fa-clock"></i> Renvoyer dans <span x-text="countdown" class="font-mono font-bold"></span>s
-                            </span>
-                        </template>
-                    </button>
-                </div>
-
-                <!-- Messages de retour (Succès / Erreur) -->
-                <div x-show="errorMessage" x-cloak class="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-2.5">
-                    <i class="fas fa-circle-exclamation mt-0.5 text-red-500"></i>
-                    <span x-text="errorMessage"></span>
-                </div>
-
-                <div x-show="successMessage" x-cloak class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm space-y-2">
-                    <div class="flex items-center gap-2 font-bold text-emerald-900">
-                        <i class="fas fa-circle-check text-emerald-600"></i>
-                        <span x-text="successMessage"></span>
-                    </div>
-                    <!-- Bandeau Démo (Permet de tester instantanément sans frais) -->
-                    <div x-show="demoCode" class="p-3 bg-white/90 rounded-xl border border-emerald-200 shadow-sm flex items-center justify-between">
-                        <span class="text-xs text-slate-600 font-medium">Code de test (mode démo) :</span>
-                        <span class="font-mono text-base font-extrabold text-emerald-700 tracking-widest bg-emerald-100/70 px-3 py-1 rounded-lg" x-text="demoCode"></span>
-                    </div>
-                </div>
-
-                <!-- Champ OTP (Code de validation à 6 chiffres) -->
-                <div x-show="otpSent" x-cloak class="pt-2">
-                    <label for="otp_code" class="block text-sm font-semibold text-slate-700 mb-1.5">
-                        <i class="fas fa-key mr-2 text-indigo-500"></i>Code de confirmation à 6 chiffres
-                    </label>
-                    <input id="otp_code" type="text" name="otp_code" x-model="otpCode" maxlength="6"
-                           class="w-full text-center tracking-[0.4em] font-mono text-2xl font-bold py-3.5 px-4 rounded-2xl border-2 border-emerald-400 bg-emerald-50/20 focus:bg-white focus:border-emerald-600 focus:ring-4 focus:ring-emerald-200/50 transition-all text-slate-900 shadow-inner"
-                           placeholder="••••••">
-                    <p class="mt-1.5 text-xs text-slate-500 flex items-center gap-1">
-                        <i class="fas fa-shield-halved text-emerald-500"></i> Code valable pendant 10 minutes.
+                    <p class="mt-1.5 text-xs text-slate-400">
+                        Votre numéro servira pour vous connecter facilement à votre compte.
                     </p>
-                    @error('otp_code')
+                    @error('phone')
                         <p class="mt-2 text-sm text-red-600 font-medium flex items-center gap-1">
                             <i class="fas fa-circle-exclamation"></i> {{ $message }}
                         </p>
@@ -203,7 +123,7 @@
             </div>
 
             <!-- ============================================== -->
-            <!-- 🔒 CHAMPS COMMUNS : MOT DE PASSE -->
+            <!-- 🔒 MOT DE PASSE -->
             <!-- ============================================== -->
             <div>
                 <label for="password" class="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -241,16 +161,11 @@
             <!-- Bouton d'inscription final -->
             <div class="pt-3">
                 <button type="submit"
-                        :disabled="regType === 'phone' && (!otpSent || otpCode.trim().length !== 6)"
-                        class="w-full font-bold py-4 px-6 rounded-2xl shadow-xl transition-all duration-300 transform text-base flex items-center justify-center gap-3"
-                        :class="regType === 'phone' && (!otpSent || otpCode.trim().length !== 6) ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200/50 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]'">
+                        class="w-full font-bold py-4 px-6 rounded-2xl shadow-xl transition-all duration-300 transform text-base flex items-center justify-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200/50 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
                     <i class="fas fa-user-plus"></i>
-                    <span>Créer mon compte</span>
+                    <span>Créer mon compte gratuitement</span>
                     <i class="fas fa-arrow-right text-sm opacity-70"></i>
                 </button>
-                <p x-show="regType === 'phone' && !otpSent" class="mt-2 text-center text-xs text-slate-500">
-                    Cliquez d'abord sur "Envoyer le code" ci-dessus pour activer la création de votre compte.
-                </p>
             </div>
 
             <!-- Lien vers connexion -->
@@ -271,18 +186,9 @@
         function registrationHandler() {
             return {
                 regType: 'phone', // 'phone' ou 'email'
-                channel: 'whatsapp', // 'whatsapp' ou 'sms'
                 selectedCountry: 'BJ',
                 phoneRaw: '',
                 currentPrefix: '+229',
-                otpSent: false,
-                isSendingOtp: false,
-                otpCode: '',
-                countdown: 0,
-                timerId: null,
-                errorMessage: '',
-                successMessage: '',
-                demoCode: '',
 
                 prefixes: {
                     'BJ': '+229',
@@ -303,7 +209,6 @@
                 get fullPhone() {
                     const cleaned = this.phoneRaw.replace(/\D/g, '');
                     if (!cleaned) return '';
-                    // Si l'utilisateur a déjà tapé l'indicatif sans +, on le gère
                     if (this.phoneRaw.startsWith('+')) {
                         return this.phoneRaw.replace(/\s+/g, '');
                     }
@@ -316,88 +221,10 @@
 
                 setRegType(type) {
                     this.regType = type;
-                    this.clearStatusMessages();
                 },
 
                 updateCountryPrefix() {
                     this.currentPrefix = this.prefixes[this.selectedCountry] || '+229';
-                },
-
-                clearStatusMessages() {
-                    this.errorMessage = '';
-                },
-
-                async sendOtp() {
-                    const phone = this.fullPhone;
-                    if (!phone || phone.length < 8) {
-                        this.errorMessage = 'Veuillez saisir un numéro de téléphone valide.';
-                        return;
-                    }
-
-                    this.isSendingOtp = true;
-                    this.errorMessage = '';
-                    this.successMessage = '';
-                    this.demoCode = '';
-
-                    try {
-                        const res = await fetch('{{ route('otp.send') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: JSON.stringify({
-                                phone: phone,
-                                channel: this.channel
-                            })
-                        });
-
-                        const data = await res.json();
-
-                        if (!res.ok || !data.success) {
-                            this.errorMessage = data.message || 'Impossible d\'envoyer le code. Vérifiez votre numéro.';
-                        } else {
-                            this.otpSent = true;
-                            this.successMessage = data.message || 'Code envoyé avec succès !';
-                            if (data.demo_code) {
-                                this.demoCode = data.demo_code;
-                                this.otpCode = data.demo_code; // Remplissage d'aide au test
-                            }
-                            this.startCountdown(60);
-                        }
-                    } catch (e) {
-                        this.errorMessage = 'Erreur réseau. Veuillez réessayer.';
-                    } finally {
-                        this.isSendingOtp = false;
-                    }
-                },
-
-                startCountdown(seconds) {
-                    this.countdown = seconds;
-                    if (this.timerId) clearInterval(this.timerId);
-                    this.timerId = setInterval(() => {
-                        this.countdown--;
-                        if (this.countdown <= 0) {
-                            clearInterval(this.timerId);
-                            this.timerId = null;
-                        }
-                    }, 1000);
-                },
-
-                handleSubmit(e) {
-                    if (this.regType === 'phone') {
-                        if (!this.otpSent) {
-                            e.preventDefault();
-                            this.errorMessage = 'Veuillez d\'abord demander et valider votre code de vérification.';
-                            return;
-                        }
-                        if (this.otpCode.trim().length !== 6) {
-                            e.preventDefault();
-                            this.errorMessage = 'Veuillez entrer le code de confirmation à 6 chiffres.';
-                            return;
-                        }
-                    }
                 }
             };
         }

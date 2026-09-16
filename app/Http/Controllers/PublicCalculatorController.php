@@ -137,6 +137,7 @@ class PublicCalculatorController extends Controller
             'result' => $result,
             'amount' => $amount,
             'country' => $country,
+            'currency' => 'FCFA',
             'type' => $type,
             'remaining' => $newRemaining,
             'hasRemaining' => $hasRemaining,

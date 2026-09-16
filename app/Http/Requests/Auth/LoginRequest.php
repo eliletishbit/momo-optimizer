@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+
 class LoginRequest extends FormRequest
 {
     /**
@@ -42,24 +45,20 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $input = $this->input('email');
+        $input = trim((string) $this->input('email'));
         $isEmail = filter_var($input, FILTER_VALIDATE_EMAIL);
 
         if ($isEmail) {
-            $credentials = [
-                'email' => strtolower($input),
-                'password' => $this->input('password'),
-            ];
+            $user = User::where('email', strtolower($input))->first();
         } else {
-            // Nettoyage et normalisation du numéro
-            $phone = preg_replace('/[^\d+]/', '', trim($input));
-            $credentials = [
-                'phone' => $phone,
-                'password' => $this->input('password'),
-            ];
+            $cleaned = preg_replace('/[^\d]/', '', $input);
+            $user = User::where('phone', $input)
+                ->orWhere('phone', '+' . $cleaned)
+                ->orWhere('phone', 'like', '%' . substr($cleaned, -8))
+                ->first();
         }
 
-        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
+        if (! $user || ! Hash::check($this->input('password'), $user->password)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -67,6 +66,7 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        Auth::login($user, $this->boolean('remember'));
         RateLimiter::clear($this->throttleKey());
     }
 

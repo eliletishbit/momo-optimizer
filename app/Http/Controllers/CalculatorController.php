@@ -28,12 +28,6 @@ class CalculatorController extends Controller
             return $user->userMethods()->count();
         });
 
-        if ($methodCount < 1) {
-            return redirect()->route('settings')->with('error', 
-                'Ajoutez au moins un moyen de paiement pour utiliser le calculateur d\'optimisation.'
-            );
-        }
-
         if (! $user->canAccessCalculator()) {
             if ($user->subscription === 'pay_as_you_go' && $user->payg_credits <= 0) {
                 return redirect()->route('pricing')->with('error', 

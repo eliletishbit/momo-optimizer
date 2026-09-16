@@ -55,8 +55,7 @@ protected $providers = [
         $this->geminiApiKey = config('services.gemini.api_key');
         $this->openRouterApiKey = config('services.openrouter.api_key');
 
-        $this->currentProvider = $this->getFirstAvailableProvider();
-        Log::info('IAFeeOptimizer initialisé avec: ' . $this->currentProvider['type'] . ' (' . $this->currentProvider['model'] . ')');
+        $this->currentProvider = $this->providers['groq'] ?? reset($this->providers);
     }
 
     /**

@@ -45,7 +45,7 @@
 
             <div class="rounded-2xl border border-sky-100 bg-sky-50 p-5 shadow-sm">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Montant à recevoir</p>
-                <p class="mt-2 text-xl font-black text-sky-900">{{ $amount }} {{ $currency }}</p>
+                <p class="mt-2 text-xl font-black text-sky-900">{{ number_format((float) $amount, 0, ',', ' ') }} {{ $currency ?? 'FCFA' }}</p>
                 <p class="mt-2 text-sm text-sky-700">Après frais estimés</p>
             </div>
 
