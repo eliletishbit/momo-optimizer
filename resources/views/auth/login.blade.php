@@ -17,15 +17,15 @@
         <!-- Email Address -->
         <div class="space-y-2">
             <label for="email" class="block text-sm font-bold text-slate-700 ml-1">
-                <i class="far fa-envelope mr-2 text-indigo-500"></i> Adresse Email
+                <i class="fas fa-user-check mr-2 text-indigo-500"></i> Email ou Numéro WhatsApp / Téléphone
             </label>
             <input id="email" 
-                   type="email" 
+                   type="text" 
                    name="email" 
                    value="{{ old('email') }}" 
                    required autofocus autocomplete="username"
                    class="block w-full px-5 py-4 bg-slate-50 border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all duration-300 placeholder:text-slate-400 text-slate-800 @error('email') border-red-500 ring-2 ring-red-200/50 @enderror"
-                   placeholder="nom@exemple.com">
+                   placeholder="nom@exemple.com ou +229 97 00 00 00">
             @error('email')
                 <p class="mt-2 text-sm text-red-600 font-medium flex items-center gap-1">
                     <i class="fas fa-circle-exclamation"></i> {{ $message }}
