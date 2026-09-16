@@ -21,6 +21,15 @@ if [ ! -L /var/www/html/public/storage ]; then
     php artisan storage:link || true
 fi
 
+# Vérification de sécurité pour APP_KEY
+if [ -z "$APP_KEY" ]; then
+    echo "ATTENTION: APP_KEY non fournie. Génération dynamique de secours..."
+    export APP_KEY=$(php artisan key:generate --show)
+fi
+
+# Nettoyage préalable des caches
+php artisan config:clear || true
+
 # Exécution des migrations de base de données (si configurée)
 if [ -n "$DB_HOST" ] || [ -n "$DB_URL" ]; then
     echo "Exécution des migrations de base de données..."
