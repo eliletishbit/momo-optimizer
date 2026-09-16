@@ -2,9 +2,16 @@ import './bootstrap';
 
 import Alpine from 'alpinejs';
 
-window.Alpine = Alpine;
+if (!window.Alpine) {
+    window.Alpine = Alpine;
+}
 
-Alpine.start();
+// Ne démarrer Alpine que sur les pages où Livewire n'est pas présent (ex: guest/register/login)
+document.addEventListener('DOMContentLoaded', () => {
+    if (!window.Livewire && window.Alpine) {
+        Alpine.start();
+    }
+});
 
 const installAppBtn = document.getElementById('install-app-btn');
 let deferredPrompt = null;

@@ -10,7 +10,7 @@
 
     <!-- Formulaire -->
     <div class="rounded-3xl border border-gray-200 bg-white p-5 shadow-xl shadow-indigo-100/50 sm:p-8">
-        <form wire:submit="calculate" class="space-y-6">
+        <form wire:submit.prevent="calculate" onsubmit="return false;" class="space-y-6">
             @csrf
 
             <div class="grid gap-6 md:grid-cols-2">
@@ -26,7 +26,7 @@
                     <label for="country" class="mb-2 block text-sm font-semibold text-gray-700">Pays</label>
                     <select wire:model.live="country" id="country" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100">
                         @foreach($countries as $countryOption)
-                            <option value="{{ $countryOption->code }}">{{ $countryOption->name }} ({{ $countryOption->currency }})</option>
+                            <option value="{{ $countryOption->code }}" @if($countryOption->code === $country) selected @endif>{{ $countryOption->name }} ({{ $countryOption->currency }})</option>
                         @endforeach
                     </select>
                     <p class="mt-1 text-xs text-gray-400">Le pays est automatiquement sélectionné selon votre profil. Vous pouvez le modifier si nécessaire.</p>
@@ -58,8 +58,9 @@
                 <p class="mt-1 text-xs text-gray-400">Si vous connaissez le réseau sur lequel l'argent est déjà, sélectionnez-le pour voir uniquement les options de retrait sur ce réseau.</p>
             </div>
 
-            <button type="submit" 
-                    class="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60" 
+            <button type="button"
+                    wire:click="calculate"
+                    class="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer" 
                     wire:loading.attr="disabled" 
                     wire:target="calculate">
                 <span wire:loading.remove wire:target="calculate">Calculer les frais</span>

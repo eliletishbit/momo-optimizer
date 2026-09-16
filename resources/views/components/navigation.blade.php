@@ -45,6 +45,12 @@
                                 📱 Devenir opérateur
                             </x-nav-link>
                         @endif
+
+                        @if(auth()->user()->is_admin || auth()->user()->hasActivePro() || auth()->user()->hasActiveBusiness())
+                            <x-nav-link :href="route('pro.analytics')" :active="request()->routeIs('pro.*')">
+                                💎 Pro
+                            </x-nav-link>
+                        @endif
                     @endauth
                 </div>
             </div>
@@ -144,6 +150,12 @@
                 @elseif(!auth()->user()->hasOperatorProfile())
                     <x-responsive-nav-link :href="route('operator.apply')" :active="request()->routeIs('operator.apply')">
                         📱 Devenir opérateur
+                    </x-responsive-nav-link>
+                @endif
+
+                @if(auth()->user()->is_admin || auth()->user()->hasActivePro() || auth()->user()->hasActiveBusiness())
+                    <x-responsive-nav-link :href="route('pro.analytics')" :active="request()->routeIs('pro.*')">
+                        💎 Espace Pro
                     </x-responsive-nav-link>
                 @endif
             @endauth

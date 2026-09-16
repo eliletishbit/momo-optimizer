@@ -51,7 +51,26 @@ return [
         'api_key'=> env('GROQ_API_KEY')
     ],
     'mistral' => [
-    'api_key' => env('MISTRAL_API_KEY'),
+        'api_key' => env('MISTRAL_API_KEY'),
+    ],
+
+    'otp' => [
+        'demo_mode' => env('OTP_DEMO_MODE', false),
+        'provider' => env('OTP_PROVIDER', 'termii'), // 'termii', 'twilio', 'webhook'
+        'webhook_url' => env('OTP_WEBHOOK_URL'),
+    ],
+
+    'termii' => [
+        'api_key' => env('TERMII_API_KEY'),
+        'sender_id' => env('TERMII_SENDER_ID', 'MomoOpti'),
+        'url' => env('TERMII_BASE_URL', 'https://api.ng.termii.com'),
+    ],
+
+    'twilio' => [
+        'sid' => env('TWILIO_SID'),
+        'token' => env('TWILIO_AUTH_TOKEN'),
+        'from_sms' => env('TWILIO_SMS_FROM'),
+        'from_whatsapp' => env('TWILIO_WHATSAPP_FROM'),
     ],
 
 ];

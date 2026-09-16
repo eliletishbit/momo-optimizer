@@ -1,4 +1,4 @@
-﻿@extends('layouts.home')
+@extends('layouts.home')
 
 @section('content')
     <div class="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500/30">
@@ -23,6 +23,7 @@
                         <a href="#avantages" class="transition hover:text-white">Avantages</a>
                         <a href="#fonctionnalites" class="transition hover:text-white">Fonctionnalités</a>
                         <a href="#usage" class="transition hover:text-white">Cas d’usage</a>
+                        <a href="#operateurs" class="transition hover:text-white text-emerald-400 font-medium">Opérateurs MoMo</a>
                         <a href="#tarifs" class="transition hover:text-white">Tarifs</a>
                     </nav>
 
@@ -63,12 +64,12 @@
                             SaaS mobile • International
                         </div>
 
-                        <h1 class="max-w-xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-                            Choisir le bon réseau pour payer moins.
+                        <h1 class="max-w-2xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
+                            L'intelligence financière pour vos transferts & points Mobile Money.
                         </h1>
 
                         <p class="mt-6 max-w-xl text-lg leading-8 text-slate-300">
-                            MomoOpti compare instantanément les frais d’envoi et de retrait de vos moyens préférés pour vous aider à économiser à chaque transaction.
+                            Particuliers ou Opérateurs Mobile Money : comparez vos frais pour économiser à chaque transfert, gérez vos caisses en temps réel et clôturez vos journées avec des bilans précis et sans écarts.
                         </p>
 
                         {{-- ✅ BOUTONS HERO --}}
@@ -347,6 +348,103 @@
                                 <div class="mt-3 flex items-center justify-between text-sm text-slate-300">
                                     <span>Moov</span>
                                     <span class="font-semibold text-white">1 000 FCFA</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- SECTION OPÉRATEURS MOBILE MONEY --}}
+                <section id="operateurs" class="mt-24 scroll-mt-24">
+                    <div class="relative overflow-hidden rounded-[2.5rem] border border-emerald-500/20 bg-gradient-to-br from-emerald-950/40 via-slate-900 to-indigo-950/40 p-8 sm:p-12 shadow-2xl">
+                        <div class="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+                        <div class="absolute -left-20 -bottom-20 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+
+                        <div class="grid items-center gap-10 lg:grid-cols-12 relative z-10">
+                            {{-- Colonne gauche : Explications --}}
+                            <div class="lg:col-span-6 space-y-6">
+                                <div class="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-emerald-300">
+                                    <span class="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                    Espace Opérateurs & Points MoMo
+                                </div>
+
+                                <h2 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                                    Pilotez votre agence en temps réel et clôturez vos journées sans écart.
+                                </h2>
+
+                                <p class="text-base sm:text-lg leading-relaxed text-slate-300">
+                                    MomoOpti permet aux opérateurs et points de vente Mobile Money d'enregistrer leurs opérations en quelques secondes, de synchroniser automatiquement leurs caisses et d'obtenir un bilan journalier net et infalsifiable.
+                                </p>
+
+                                <div class="space-y-4 pt-2">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 font-bold">
+                                            💰
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-white">Suivi double caisse (Physique & Virtuelle)</h4>
+                                            <p class="text-sm text-slate-400">Chaque retrait ou dépôt réajuste instantanément vos espèces en main et votre solde par réseau (MTN, Moov, Celtiis, etc.).</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400 font-bold">
+                                            🛡️
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-white">Sécurité anti-doublon & contrôle de liquidité</h4>
+                                            <p class="text-sm text-slate-400">Finis les doubles clics accidentels et les caisses négatives : le système bloque automatiquement les opérations impossibles.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 font-bold">
+                                            📈
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-white">Bilan journalier & Réconciliation en 1 clic</h4>
+                                            <p class="text-sm text-slate-400">Total entrant, total sortant, solde net et détail par opérateur : votre clôture de fin de journée se fait sans calculatrice.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="pt-4 flex flex-wrap gap-4">
+                                    @auth
+                                        @if(auth()->user()->isOperator())
+                                            <a href="{{ route('operations.index') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition">
+                                                <span>Accéder à mes opérations</span>
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                            </a>
+                                        @else
+                                            <a href="{{ route('operator.apply') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition">
+                                                <span>Activer l'espace opérateur</span>
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                            </a>
+                                        @endif
+                                    @else
+                                        <a href="{{ route('register') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 transition">
+                                            <span>Créer un compte opérateur</span>
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                        </a>
+                                    @endauth
+                                </div>
+                            </div>
+
+                            {{-- Colonne droite : Illustration avec la capture --}}
+                            <div class="lg:col-span-6">
+                                <div class="group relative rounded-2xl border border-white/10 bg-slate-950/80 p-2.5 sm:p-4 shadow-2xl backdrop-blur-xl transition hover:border-emerald-500/40">
+                                    <div class="overflow-hidden rounded-xl bg-slate-900">
+                                        <img src="{{ asset('images/operator_dashboard.png') }}" 
+                                             alt="Interface Opérateur Mobile Money - Mes opérations et bilan journalier" 
+                                             class="w-full h-auto object-cover rounded-xl transition duration-500 group-hover:scale-[1.02]">
+                                    </div>
+                                    <div class="mt-3 flex items-center justify-between px-2 text-xs text-slate-400">
+                                        <span class="flex items-center gap-1.5 text-emerald-400 font-medium">
+                                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                                            En direct : Mes opérations en temps réel
+                                        </span>
+                                        <span>Bilan journalier & Gestion des caisses</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
