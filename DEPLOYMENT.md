@@ -1,6 +1,8 @@
-﻿# 🚀 Guide de Déploiement Gratuit — Momo Optimizer
+# 🚀 Guide de Déploiement Gratuit — Momo Optimizer
 
 Ce guide explique étape par étape comment déployer votre SaaS Momo Optimizer gratuitement et sans carte bancaire requise.
+
+> **Statut de la base Supabase** : ✅ Active et tables `sessions`/`cache` migrées avec succès.
 
 ---
 
