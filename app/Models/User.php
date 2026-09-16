@@ -39,6 +39,9 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'phone_verified_at',
+        'whatsapp_enabled',
         'password',
         'country_code',
         'preferred_receipt_methods',
