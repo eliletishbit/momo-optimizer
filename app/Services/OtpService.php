@@ -68,20 +68,27 @@ class OtpService
             'attempts' => 0,
         ]);
 
-        // Envoi effectif du message
+        // Envoi effectif du message via la passerelle réelle configurée
         $this->dispatchMessage($phone, $code, $otp->channel);
 
-        return [
+        $isDemoMode = (bool) config('services.otp.demo_mode', false);
+
+        $response = [
             'success' => true,
             'message' => $otp->channel === 'whatsapp'
                 ? 'Code de vérification envoyé sur votre WhatsApp.'
-                : 'Code de vérification envoyé par SMS.',
+                : 'Code de vérification envoyé par SMS direct.',
             'phone' => $phone,
             'channel' => $otp->channel,
             'expires_at' => $otp->expires_at->toIso8601String(),
-            // Exposé pour tests immédiats en environnement de démonstration
-            'demo_code' => $code,
         ];
+
+        // N'exposer le code démo QUE si le mode démo est explicitement activé
+        if ($isDemoMode) {
+            $response['demo_code'] = $code;
+        }
+
+        return $response;
     }
 
     /**
@@ -121,16 +128,77 @@ class OtpService
     }
 
     /**
-     * Envoie le message via le fournisseur configuré ou par journalisation.
+     * Envoie le message via la passerelle configurée (Termii, Twilio ou Webhook).
      */
     protected function dispatchMessage(string $phone, string $code, string $channel): void
     {
-        $message = "Votre code de vérification Momo Optimizer est : {$code}. Il est valable pendant " . self::VALIDITY_MINUTES . " minutes.";
+        $message = "Votre code de vérification MomoOpti est : {$code}. Valable 10 minutes.";
 
-        // Toujours journaliser pour debug et traçabilité
-        Log::info("[OTP {$channel}] Envoi vers {$phone} : {$code}");
+        // Format du numéro sans signe '+' pour certaines passerelles comme Termii
+        $phoneWithoutPlus = ltrim($phone, '+');
+        // Format avec '+' pour Twilio
+        $phoneWithPlus = str_starts_with($phone, '+') ? $phone : '+' . $phone;
 
-        // Si une URL de webhook ou une API WhatsApp/SMS est définie dans .env
+        // Journalisation pour audit
+        Log::info("[OTP {$channel}] Déclenchement pour {$phone} : {$code}");
+
+        // 1. PASSERELLE TERMII (Afrique de l'Ouest & International)
+        $termiiKey = config('services.termii.api_key');
+        if ($termiiKey) {
+            try {
+                $termiiUrl = rtrim(config('services.termii.url', 'https://api.ng.termii.com'), '/') . '/api/sms/send';
+                $senderId = config('services.termii.sender_id', 'MomoOpti');
+
+                $payload = [
+                    'to' => $phoneWithoutPlus,
+                    'from' => $senderId,
+                    'sms' => $message,
+                    'type' => 'plain',
+                    'channel' => 'generic',
+                    'api_key' => $termiiKey,
+                ];
+
+                $response = Http::timeout(8)->post($termiiUrl, $payload);
+                Log::info("[OTP Termii] Réponse HTTP {$response->status()}", [
+                    'body' => $response->json(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::error("[OTP Termii Erreur] " . $e->getMessage());
+            }
+        }
+
+        // 2. PASSERELLE TWILIO (SMS & WhatsApp)
+        $twilioSid = config('services.twilio.sid');
+        $twilioToken = config('services.twilio.token');
+        if ($twilioSid && $twilioToken) {
+            try {
+                $from = $channel === 'whatsapp'
+                    ? 'whatsapp:' . config('services.twilio.from_whatsapp')
+                    : config('services.twilio.from_sms');
+
+                $to = $channel === 'whatsapp'
+                    ? 'whatsapp:' . $phoneWithPlus
+                    : $phoneWithPlus;
+
+                if ($from) {
+                    $twilioUrl = "https://api.twilio.com/2010-04-01/Accounts/{$twilioSid}/Messages.json";
+                    $response = Http::withBasicAuth($twilioSid, $twilioToken)
+                        ->asForm()
+                        ->timeout(8)
+                        ->post($twilioUrl, [
+                            'From' => $from,
+                            'To' => $to,
+                            'Body' => $message,
+                        ]);
+
+                    Log::info("[OTP Twilio] Réponse HTTP {$response->status()}");
+                }
+            } catch (\Throwable $e) {
+                Log::error("[OTP Twilio Erreur] " . $e->getMessage());
+            }
+        }
+
+        // 3. WEBHOOK GÉNÉRIQUE PERSONNALISÉ
         $webhookUrl = config('services.otp.webhook_url');
         if ($webhookUrl) {
             try {
@@ -141,7 +209,7 @@ class OtpService
                     'message' => $message,
                 ]);
             } catch (\Throwable $e) {
-                Log::error("Erreur lors de l'envoi OTP externe : " . $e->getMessage());
+                Log::error("[OTP Webhook Erreur] " . $e->getMessage());
             }
         }
     }

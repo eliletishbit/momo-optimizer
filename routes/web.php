@@ -103,9 +103,10 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // ✅ ROUTES PRO : UNIQUEMENT les abonnés Pro
+    // ✅ ROUTES PRO : UNIQUEMENT les abonnés Pro (et Administrateurs)
     Route::middleware(['subscription:pro'])->prefix('pro')->name('pro.')->group(function () {
-        Route::get('/decisionaldashbaorad', [PremiumController::class, 'analytics'])->name('analytics');
+        Route::get('/decisional-dashboard', [PremiumController::class, 'decisionalDashboard'])->name('analytics');
+        Route::get('/decisionaldashbaorad', [PremiumController::class, 'decisionalDashboard']); // Alias rétrocompatible
         Route::get('/bilan', [PremiumController::class, 'bilan'])->name('bilan');
     });
 

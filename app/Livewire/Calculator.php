@@ -39,12 +39,16 @@ class Calculator extends Component
     public function mount()
     {
         $user = Auth::user();
-        if ($user && $user->country_code) {
+        if ($user && !empty($user->country_code)) {
+            $this->country = $user->country_code;
             $country = Country::where('code', $user->country_code)->first();
             if ($country) {
                 $this->currency = $country->currency;
                 $this->initialized = true;
             }
+        } else {
+            $this->country = 'BJ';
+            $this->currency = 'XOF';
         }
     }
 
@@ -253,9 +257,16 @@ class Calculator extends Component
             ? 'Bonjour, je dois ' . ($this->type === 'sending' ? 'envoyer' : 'recevoir') . ' ' . number_format((float) $this->amount, 0, ',', ' ') . ' ' . $this->currency . '. Le meilleur choix est ' . ($bestOption['label'] ?? 'N/A') . ' avec des frais estimés à ' . number_format((float) ($bestOption['fee'] ?? 0), 0, ',', ' ') . ' ' . $this->currency . '.'
             : null;
 
-        // ✅ CORRECTION POSTGRESQL : whereRaw pour les booléens
-        $countries = Cache::remember('active_countries', 3600, function () {
-            return Country::whereRaw('is_active = true')->orderBy('name')->get();
+        // ✅ Prioriser le pays de l'utilisateur et la zone Mobile Money
+        $userCountry = $this->country ?: (Auth::user()?->country_code ?? 'BJ');
+        $countries = Cache::remember("active_countries_sorted_{$userCountry}", 3600, function () use ($userCountry) {
+            return Country::whereRaw('is_active = true')
+                ->orderByRaw("CASE 
+                    WHEN code = ? THEN 1
+                    WHEN code IN ('BJ', 'TG', 'CI', 'SN', 'BF', 'ML', 'NE', 'CM', 'GN') THEN 2
+                    ELSE 3
+                END, name ASC", [$userCountry])
+                ->get();
         });
 
         return view('livewire.calculator', [

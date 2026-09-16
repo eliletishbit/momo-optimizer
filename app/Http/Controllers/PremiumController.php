@@ -53,19 +53,243 @@ class PremiumController extends Controller
     }
 
     /**
-     * Affiche les statistiques avancées d'économies.
+     * Affiche le tableau de bord décisionnel (Analytics Pro).
      */
-    public function analytics(): View
+    public function decisionalDashboard(Request $request): View
     {
-        return view('pages.premium.analytics');
+        $user = Auth::user();
+
+        // 1. Statistiques globales d'optimisation
+        $totalVolume = (float) OptimizationHistory::where('user_id', $user->id)->sum('amount');
+        $totalSavings = (float) OptimizationHistory::where('user_id', $user->id)->sum('savings');
+        $totalOptimizations = (int) OptimizationHistory::where('user_id', $user->id)->count();
+        $avgSavingsRate = $totalVolume > 0 ? round(($totalSavings / $totalVolume) * 100, 2) : 0;
+
+        // 2. Dernières optimisations
+        $recentOptimizations = OptimizationHistory::where('user_id', $user->id)
+            ->with('selectedMethod')
+            ->latest()
+            ->take(6)
+            ->get();
+
+        // 3. Répartition par réseau (basée sur les méthodes choisies ou méthodes de l'utilisateur)
+        $networkDistribution = [];
+        $userMethods = $user->userMethods()->with('method')->get();
+
+        $networkColors = [
+            'MTN' => ['bg' => 'bg-yellow-400', 'color' => '#EAB308'],
+            'Moov' => ['bg' => 'bg-blue-500', 'color' => '#3B82F6'],
+            'Celtiis' => ['bg' => 'bg-emerald-500', 'color' => '#10B981'],
+            'Orange' => ['bg' => 'bg-orange-500', 'color' => '#F97316'],
+            'T-Money' => ['bg' => 'bg-red-500', 'color' => '#EF4444'],
+            'Wave' => ['bg' => 'bg-sky-400', 'color' => '#38BDF8'],
+        ];
+
+        $totalMethods = $userMethods->count();
+        if ($totalMethods > 0) {
+            $grouped = $userMethods->groupBy(function ($um) {
+                $name = $um->method ? $um->method->name : 'Autre';
+                foreach (['MTN', 'Moov', 'Celtiis', 'Orange', 'T-Money', 'Wave'] as $net) {
+                    if (stripos($name, $net) !== false) {
+                        return $net;
+                    }
+                }
+                return 'Autre';
+            });
+
+            foreach ($grouped as $net => $items) {
+                $pct = round(($items->count() / $totalMethods) * 100);
+                $networkDistribution[] = [
+                    'name' => $net,
+                    'percentage' => $pct,
+                    'count' => $items->count(),
+                    'class' => $networkColors[$net]['bg'] ?? 'bg-indigo-500',
+                ];
+            }
+        } else {
+            // Répartition par défaut pour la démo visuelle
+            $networkDistribution = [
+                ['name' => 'MTN MoMo', 'percentage' => 45, 'count' => 0, 'class' => 'bg-yellow-400'],
+                ['name' => 'Moov Money', 'percentage' => 35, 'count' => 0, 'class' => 'bg-blue-500'],
+                ['name' => 'Celtiis Cash', 'percentage' => 20, 'count' => 0, 'class' => 'bg-emerald-500'],
+            ];
+        }
+
+        // 4. Données mensuelles (6 derniers mois)
+        $monthlyTrends = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthDate = now()->subMonths($i);
+            $monthKey = $monthDate->format('Y-m');
+            $monthName = $monthDate->translatedFormat('M Y');
+
+            $mVolume = (float) OptimizationHistory::where('user_id', $user->id)
+                ->whereYear('created_at', $monthDate->year)
+                ->whereMonth('created_at', $monthDate->month)
+                ->sum('amount');
+
+            $mSavings = (float) OptimizationHistory::where('user_id', $user->id)
+                ->whereYear('created_at', $monthDate->year)
+                ->whereMonth('created_at', $monthDate->month)
+                ->sum('savings');
+
+            $monthlyTrends[] = [
+                'month' => $monthName,
+                'volume' => $mVolume,
+                'savings' => $mSavings,
+            ];
+        }
+
+        // 5. Statistiques opérateur si applicable
+        $operatorProfile = $user->operatorProfile;
+        $operatorStats = null;
+        if ($operatorProfile) {
+            $todayOps = \App\Models\OperationOperateur::where('user_id', $user->id)
+                ->whereDate('created_at', now()->toDateString())
+                ->get();
+
+            $operatorStats = [
+                'caisse_physique' => $operatorProfile->caisse_physique,
+                'caisse_virtuelle' => $operatorProfile->caisse_virtuelle,
+                'total_caisses' => $operatorProfile->caisse_physique + $operatorProfile->caisse_virtuelle,
+                'today_entrants' => $todayOps->where('direction', 'entrant')->sum('montant'),
+                'today_sortants' => $todayOps->where('direction', 'sortant')->sum('montant'),
+                'today_count' => $todayOps->count(),
+            ];
+        }
+
+        return view('pages.premium.analytics', compact(
+            'totalVolume',
+            'totalSavings',
+            'totalOptimizations',
+            'avgSavingsRate',
+            'recentOptimizations',
+            'networkDistribution',
+            'monthlyTrends',
+            'operatorStats',
+            'operatorProfile'
+        ));
     }
 
     /**
-     * Affiche le bilan mensuel.
+     * Alias de rétrocompatibilité pour analytics.
      */
-    public function bilan(): View
+    public function analytics(Request $request): View
     {
-        return view('pages.premium.bilan');
+        return $this->decisionalDashboard($request);
+    }
+
+    /**
+     * Affiche le bilan mensuel Pro et gère l'export CSV.
+     */
+    public function bilan(Request $request)
+    {
+        $user = Auth::user();
+
+        // Mois sélectionné (ex: 2026-09)
+        $selectedMonth = $request->get('month', now()->format('Y-m'));
+        try {
+            $monthDate = Carbon::createFromFormat('Y-m', $selectedMonth);
+        } catch (\Throwable $e) {
+            $monthDate = now();
+            $selectedMonth = $monthDate->format('Y-m');
+        }
+
+        $startDate = $monthDate->copy()->startOfMonth();
+        $endDate = $monthDate->copy()->endOfMonth();
+
+        // 1. Optimisations du mois
+        $optimizations = OptimizationHistory::where('user_id', $user->id)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->with('selectedMethod')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $optVolume = (float) $optimizations->sum('amount');
+        $optSavings = (float) $optimizations->sum('savings');
+        $optFees = (float) $optimizations->sum('total_fee');
+
+        // 2. Opérations opérateur si compte opérateur
+        $operatorOperations = collect();
+        $opTotalEntrant = 0;
+        $opTotalSortant = 0;
+        $opNet = 0;
+
+        if ($user->isOperator() || $user->operatorProfile) {
+            $operatorOperations = \App\Models\OperationOperateur::where('user_id', $user->id)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->with('typeoperateur')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $opTotalEntrant = (float) $operatorOperations->where('direction', 'entrant')->sum('montant');
+            $opTotalSortant = (float) $operatorOperations->where('direction', 'sortant')->sum('montant');
+            $opNet = $opTotalEntrant - $opTotalSortant;
+        }
+
+        // 3. Export CSV si demandé
+        if ($request->get('export') === 'csv') {
+            $fileName = "bilan-momoopti-{$selectedMonth}.csv";
+            $headers = [
+                'Content-Type' => 'text/csv; charset=UTF-8',
+                'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+            ];
+
+            return response()->stream(function () use ($optimizations, $operatorOperations, $selectedMonth) {
+                $handle = fopen('php://output', 'w');
+                // BOM UTF-8 pour ouverture correcte dans Excel
+                fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+
+                fputcsv($handle, ["Bilan Mensuel MomoOpti - Mois : {$selectedMonth}"]);
+                fputcsv($handle, []);
+
+                if ($operatorOperations->isNotEmpty()) {
+                    fputcsv($handle, ['--- OPÉRATIONS DU POINT DE VENTE ---']);
+                    fputcsv($handle, ['Date', 'Réseau', 'Type', 'Direction', 'Client', 'Montant (FCFA)']);
+                    foreach ($operatorOperations as $op) {
+                        fputcsv($handle, [
+                            $op->created_at->format('d/m/Y H:i'),
+                            $op->reseau,
+                            $op->typeoperateur ? $op->typeoperateur->nom : 'N/A',
+                            $op->direction,
+                            $op->telephone_client ?? '-',
+                            $op->montant,
+                        ]);
+                    }
+                    fputcsv($handle, []);
+                }
+
+                fputcsv($handle, ['--- SIMULATIONS & OPTIMISATIONS ---']);
+                fputcsv($handle, ['Date', 'Type', 'Montant (FCFA)', 'Frais (FCFA)', 'Économie (FCFA)', 'Moyen retenu']);
+                foreach ($optimizations as $opt) {
+                    fputcsv($handle, [
+                        $opt->created_at->format('d/m/Y H:i'),
+                        $opt->type === 'sending' ? 'Envoi' : 'Retrait',
+                        $opt->amount,
+                        $opt->total_fee,
+                        $opt->savings,
+                        $opt->selectedMethod ? $opt->selectedMethod->name : 'Optimisé',
+                    ]);
+                }
+
+                fclose($handle);
+            }, 200, $headers);
+        }
+
+        $operatorProfile = $user->operatorProfile;
+
+        return view('pages.premium.bilan', compact(
+            'selectedMonth',
+            'monthDate',
+            'optimizations',
+            'optVolume',
+            'optSavings',
+            'optFees',
+            'operatorOperations',
+            'opTotalEntrant',
+            'opTotalSortant',
+            'opNet',
+            'operatorProfile'
+        ));
     }
 
     /**
