@@ -1,17 +1,52 @@
 import './bootstrap';
 
-import Alpine from 'alpinejs';
+// Fonction universelle de copie avec feedback visuel ("Copié !")
+window.copyToClipboard = function (text, btnElement) {
+    if (!text) return;
+    const originalHtml = btnElement ? btnElement.innerHTML : null;
 
-if (!window.Alpine) {
-    window.Alpine = Alpine;
-}
+    const showSuccess = () => {
+        if (btnElement) {
+            btnElement.innerHTML = `
+                <svg class="w-4 h-4 text-emerald-600 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span class="text-emerald-700 font-bold">Copié !</span>
+            `;
+            btnElement.classList.add('bg-emerald-50', 'border-emerald-300');
+            setTimeout(() => {
+                if (originalHtml) btnElement.innerHTML = originalHtml;
+                btnElement.classList.remove('bg-emerald-50', 'border-emerald-300');
+            }, 2500);
+        }
+    };
 
-// Ne démarrer Alpine que sur les pages où Livewire n'est pas présent (ex: guest/register/login)
-document.addEventListener('DOMContentLoaded', () => {
-    if (!window.Livewire && window.Alpine) {
-        Alpine.start();
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+            .then(showSuccess)
+            .catch(() => fallbackCopy(text, showSuccess));
+    } else {
+        fallbackCopy(text, showSuccess);
     }
-});
+};
+
+function fallbackCopy(text, callback) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        if (callback) callback();
+    } catch (err) {
+        console.error('Erreur fallback copie:', err);
+    }
+    textArea.remove();
+}
 
 const installAppBtn = document.getElementById('install-app-btn');
 let deferredPrompt = null;

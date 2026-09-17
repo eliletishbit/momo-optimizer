@@ -62,8 +62,8 @@ class CalculatorController extends Controller
                 );
             }
             
-            return redirect()->route('settings')->with('error', 
-                'Ajoutez au moins un moyen de paiement.'
+            return redirect()->route('pricing')->with('error', 
+                'Veuillez choisir une formule pour accéder au calculateur.'
             );
         }
 
@@ -85,6 +85,11 @@ class CalculatorController extends Controller
         ]);
     }
 
+    public function calculate(Request $request, FeeOptimizer $optimizer): View|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return $this->result($request, $optimizer);
+    }
+
     public function result(Request $request, FeeOptimizer $optimizer): View|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $startTime = microtime(true);
@@ -95,16 +100,6 @@ class CalculatorController extends Controller
         }
 
         Log::info('🚀 [START] result() appelé', ['user_id' => $user->id]);
-
-        $methodCount = Cache::remember("user_methods_count_{$user->id}", now()->addMinutes(15), function () use ($user) {
-            return $user->userMethods()->count();
-        });
-
-        if ($methodCount < 1) {
-            return redirect()->route('settings')->with('error', 
-                'Ajoutez au moins un moyen de paiement.'
-            );
-        }
 
         if (! $user->canAccessCalculator()) {
             if ($user->subscription === 'pay_as_you_go' && $user->payg_credits <= 0) {
@@ -126,7 +121,7 @@ class CalculatorController extends Controller
                 return redirect()->route('pricing')->with('error', 'Essai gratuit terminé.');
             }
             
-            return redirect()->route('settings')->with('error', 'Ajoutez des moyens de paiement.');
+            return redirect()->route('pricing')->with('error', 'Veuillez choisir une formule pour continuer.');
         }
 
         if ($user->isDegraded()) {
@@ -168,9 +163,23 @@ class CalculatorController extends Controller
                 ->toArray();
         });
 
+        // Fallback automatique sur les méthodes actives du pays si l'utilisateur n'en a pas configuré
+        if (empty($userMethodIds)) {
+            $userMethodIds = Method::where('country_code', $selectedCountry)
+                ->whereRaw('is_active = true')
+                ->pluck('id')
+                ->toArray();
+        }
+
+        if (empty($userMethodIds)) {
+            $userMethodIds = Method::whereRaw('is_active = true')
+                ->pluck('id')
+                ->toArray();
+        }
+
         if (empty($userMethodIds)) {
             return redirect()->route('settings')->with('error', 
-                'Aucun moyen de paiement trouvé pour ce pays.'
+                'Aucun moyen de paiement disponible pour ce pays.'
             );
         }
 

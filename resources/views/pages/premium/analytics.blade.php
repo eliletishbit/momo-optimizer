@@ -62,11 +62,11 @@
     </div>
 
     {{-- Si profil opérateur actif : métriques de caisse en temps réel --}}
-    @if($operatorStats)
+    @if($isOperator && $operatorStats)
         <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-10">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6 mb-6">
                 <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Agence & Flotte Mobile Money</span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Point de Vente & Agence Mobile Money</span>
                     <h2 class="text-2xl font-black mt-1">État des Caisses en Temps Réel</h2>
                 </div>
                 <div class="flex gap-3">
@@ -74,7 +74,7 @@
                         Gérer les opérations
                     </a>
                     <a href="{{ route('operations.bilan') }}" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition">
-                        Bilan du jour
+                        Bilan journalier caisse
                     </a>
                 </div>
             </div>
@@ -96,6 +96,43 @@
                     <p class="text-xs text-slate-400 font-semibold uppercase">Actif Total de l'Agence</p>
                     <p class="text-2xl font-extrabold text-emerald-300 mt-2">{{ number_format($operatorStats['total_caisses'], 0, ',', ' ') }} FCFA</p>
                     <p class="text-xs text-slate-400 mt-1">Physique + Virtuel synchronisés</p>
+                </div>
+            </div>
+        </div>
+    @else
+        {{-- Pour un utilisateur Pro non-opérateur (Entreprise / Particulier) : Carte Stratégique de Décision --}}
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-10">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5 mb-5">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Arbitrage Financier & Stratégie Trésorerie</span>
+                    <h2 class="text-2xl font-black mt-1">Performance Globale d'Optimisation</h2>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{{ route('pro.bilan') }}" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition">
+                        Bilan d'Aide à la Décision →
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white/5 rounded-2xl p-5 border border-white/10">
+                    <p class="text-xs text-slate-400 font-semibold uppercase">Économies Conservées</p>
+                    <p class="text-2xl font-extrabold text-emerald-400 mt-2">+ {{ number_format($totalSavings, 0, ',', ' ') }} FCFA</p>
+                    <p class="text-xs text-slate-400 mt-1">Directement préservés dans votre trésorerie</p>
+                </div>
+
+                <div class="bg-white/5 rounded-2xl p-5 border border-white/10">
+                    <p class="text-xs text-slate-400 font-semibold uppercase">Volume Total Traité</p>
+                    <p class="text-2xl font-extrabold text-white mt-2">{{ number_format($totalVolume, 0, ',', ' ') }} FCFA</p>
+                    <p class="text-xs text-indigo-300 mt-1">Analysé et comparé sur tous les réseaux</p>
+                </div>
+
+                <div class="bg-white/5 rounded-2xl p-5 border border-white/10">
+                    <p class="text-xs text-slate-400 font-semibold uppercase">Rentabilité de l'Abonnement</p>
+                    <p class="text-2xl font-extrabold text-amber-300 mt-2">
+                        {{ $totalSavings >= 5000 ? 'Amorti à ' . round(($totalSavings / 5000) * 100) . '%' : 'En cours d\'amortissement' }}
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">Gains nets générés vs coût d'abonnement</p>
                 </div>
             </div>
         </div>

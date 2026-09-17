@@ -217,10 +217,10 @@
 
             @if($subscription_status !== 'active')
                 <div class="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg">
-                    <h4 class="text-lg font-bold mb-2">Passez au Premium !</h4>
-                    <p class="text-indigo-100 text-sm mb-6">Débloquez les options avancées tel que, le tableau analytique de bilan, les exports PDF et plus.</p>
+                    <h4 class="text-lg font-bold mb-2">Passez au forfait Pro !</h4>
+                    <p class="text-indigo-100 text-sm mb-6">Débloquez le tableau de bord décisionnel, le bilan d'aide à la décision exportable et les audits financiers avancés.</p>
                     <x-button :href="route('pricing')" tag="a" variant="secondary" class="w-full border-none text-indigo-700 hover:bg-white">
-                        Voir les avantages
+                        Découvrir l'offre Pro
                     </x-button>
                 </div>
             @endif

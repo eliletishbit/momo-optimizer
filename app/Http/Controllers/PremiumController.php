@@ -57,9 +57,14 @@ class PremiumController extends Controller
     /**
      * Affiche le tableau de bord décisionnel (Analytics Pro).
      */
-    public function decisionalDashboard(Request $request): View
+    public function decisionalDashboard(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         $user = Auth::user();
+
+        // 🔒 Contrôle d'accès strict : réservé aux abonnés Pro, Business et Administrateurs
+        if (!$user->is_admin && !$user->hasActivePro() && !$user->hasActiveBusiness()) {
+            return redirect()->route('pricing')->with('error', 'Cette fonctionnalité est exclusivement réservée aux abonnés Pro et Business.');
+        }
 
         // 1. Statistiques globales d'optimisation
         $totalVolume = (float) OptimizationHistory::where('user_id', $user->id)->sum('amount');
@@ -121,7 +126,6 @@ class PremiumController extends Controller
         $monthlyTrends = [];
         for ($i = 5; $i >= 0; $i--) {
             $monthDate = now()->subMonths($i);
-            $monthKey = $monthDate->format('Y-m');
             $monthName = $monthDate->translatedFormat('M Y');
 
             $mVolume = (float) OptimizationHistory::where('user_id', $user->id)
@@ -141,10 +145,11 @@ class PremiumController extends Controller
             ];
         }
 
-        // 5. Statistiques opérateur si applicable
-        $operatorProfile = $user->operatorProfile;
+        // 5. Statistiques opérateur UNIQUEMENT si l'utilisateur est un opérateur actif
+        $isOperator = $user->isOperator();
+        $operatorProfile = $isOperator ? $user->operatorProfile : null;
         $operatorStats = null;
-        if ($operatorProfile) {
+        if ($isOperator && $operatorProfile) {
             $todayOps = \App\Models\OperationOperateur::where('user_id', $user->id)
                 ->whereDate('created_at', now()->toDateString())
                 ->get();
@@ -168,24 +173,31 @@ class PremiumController extends Controller
             'networkDistribution',
             'monthlyTrends',
             'operatorStats',
-            'operatorProfile'
+            'operatorProfile',
+            'isOperator'
         ));
     }
 
     /**
      * Alias de rétrocompatibilité pour analytics.
      */
-    public function analytics(Request $request): View
+    public function analytics(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         return $this->decisionalDashboard($request);
     }
 
     /**
-     * Affiche le bilan mensuel Pro et gère l'export CSV.
+     * Affiche le bilan mensuel d'aide à la décision Pro et gère l'export CSV.
+     * Dédié aux entreprises et particuliers qui optimisent leurs frais de transfert.
      */
     public function bilan(Request $request)
     {
         $user = Auth::user();
+
+        // 🔒 Contrôle d'accès strict : réservé aux abonnés Pro, Business et Administrateurs
+        if (!$user->is_admin && !$user->hasActivePro() && !$user->hasActiveBusiness()) {
+            return redirect()->route('pricing')->with('error', 'Cette fonctionnalité est exclusivement réservée aux abonnés Pro et Business.');
+        }
 
         // Mois sélectionné (ex: 2026-09)
         $selectedMonth = $request->get('month', now()->format('Y-m'));
@@ -199,7 +211,7 @@ class PremiumController extends Controller
         $startDate = $monthDate->copy()->startOfMonth();
         $endDate = $monthDate->copy()->endOfMonth();
 
-        // 1. Optimisations du mois
+        // 1. Optimisations et arbitrages réalisés durant le mois
         $optimizations = OptimizationHistory::where('user_id', $user->id)
             ->whereBetween('created_at', [$startDate, $endDate])
             ->with('selectedMethod')
@@ -209,75 +221,78 @@ class PremiumController extends Controller
         $optVolume = (float) $optimizations->sum('amount');
         $optSavings = (float) $optimizations->sum('savings');
         $optFees = (float) $optimizations->sum('total_fee');
+        $optCount = $optimizations->count();
+        $avgSavingsRate = $optVolume > 0 ? round(($optSavings / $optVolume) * 100, 2) : 0;
 
-        // 2. Opérations opérateur si compte opérateur
-        $operatorOperations = collect();
-        $opTotalEntrant = 0;
-        $opTotalSortant = 0;
-        $opNet = 0;
+        // 2. Analyse de performance et répartition par réseau
+        $networkBreakdown = [];
+        $groupedByNetwork = $optimizations->groupBy(function ($opt) {
+            $methodName = $opt->selectedMethod ? $opt->selectedMethod->name : 'Autre';
+            foreach (['MTN', 'Moov', 'Celtiis', 'Orange', 'T-Money', 'Wave'] as $net) {
+                if (stripos($methodName, $net) !== false) {
+                    return $net;
+                }
+            }
+            return $methodName ?: 'Général';
+        });
 
-        if ($user->isOperator() || $user->operatorProfile) {
-            $operatorOperations = \App\Models\OperationOperateur::where('user_id', $user->id)
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->with('typeoperateur')
-                ->orderBy('created_at', 'desc')
-                ->get();
-
-            $opTotalEntrant = (float) $operatorOperations->where('direction', 'entrant')->sum('montant');
-            $opTotalSortant = (float) $operatorOperations->where('direction', 'sortant')->sum('montant');
-            $opNet = $opTotalEntrant - $opTotalSortant;
+        foreach ($groupedByNetwork as $netName => $group) {
+            $netVol = (float) $group->sum('amount');
+            $netFees = (float) $group->sum('total_fee');
+            $netSav = (float) $group->sum('savings');
+            $networkBreakdown[] = [
+                'name' => $netName,
+                'count' => $group->count(),
+                'volume' => $netVol,
+                'fees' => $netFees,
+                'savings' => $netSav,
+                'percentage' => $optVolume > 0 ? round(($netVol / $optVolume) * 100, 1) : 0,
+            ];
         }
 
-        // 3. Export CSV si demandé
+        // 3. Export CSV d'aide à la décision financière (sans opérations de caisse opérateur)
         if ($request->get('export') === 'csv') {
-            $fileName = "bilan-momoopti-{$selectedMonth}.csv";
+            $fileName = "bilan-aide-decision-momoopti-{$selectedMonth}.csv";
             $headers = [
                 'Content-Type' => 'text/csv; charset=UTF-8',
                 'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
             ];
 
-            return response()->stream(function () use ($optimizations, $operatorOperations, $selectedMonth) {
+            return response()->stream(function () use ($optimizations, $selectedMonth, $optVolume, $optFees, $optSavings, $optCount, $avgSavingsRate, $user) {
                 $handle = fopen('php://output', 'w');
                 // BOM UTF-8 pour ouverture correcte dans Excel
                 fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
 
-                fputcsv($handle, ["Bilan Mensuel MomoOpti - Mois : {$selectedMonth}"]);
+                fputcsv($handle, ["MOMOOPTI - BILAN D'AIDE À LA DÉCISION & OPTIMISATION FINANCIÈRE"]);
+                fputcsv($handle, ["Période : {$selectedMonth}", "Généré pour : {$user->name} ({$user->email})", "Date d'export : " . now()->format('d/m/Y H:i')]);
                 fputcsv($handle, []);
 
-                if ($operatorOperations->isNotEmpty()) {
-                    fputcsv($handle, ['--- OPÉRATIONS DU POINT DE VENTE ---']);
-                    fputcsv($handle, ['Date', 'Réseau', 'Type', 'Direction', 'Client', 'Montant (FCFA)']);
-                    foreach ($operatorOperations as $op) {
-                        fputcsv($handle, [
-                            $op->created_at->format('d/m/Y H:i'),
-                            $op->reseau,
-                            $op->typeoperateur ? $op->typeoperateur->nom : 'N/A',
-                            $op->direction,
-                            $op->telephone_client ?? '-',
-                            $op->montant,
-                        ]);
-                    }
-                    fputcsv($handle, []);
-                }
+                fputcsv($handle, ['--- RÉSUMÉ EXÉCUTIF DU MOIS ---']);
+                fputcsv($handle, ['Indicateur', 'Valeur']);
+                fputcsv($handle, ['Volume total optimisé (FCFA)', $optVolume]);
+                fputcsv($handle, ['Frais optimisés payés (FCFA)', $optFees]);
+                fputcsv($handle, ['Économies nettes générées (FCFA)', $optSavings]);
+                fputcsv($handle, ['Taux d\'économie global (%)', $avgSavingsRate . '%']);
+                fputcsv($handle, ['Nombre total de transactions analysées', $optCount]);
+                fputcsv($handle, []);
 
-                fputcsv($handle, ['--- SIMULATIONS & OPTIMISATIONS ---']);
-                fputcsv($handle, ['Date', 'Type', 'Montant (FCFA)', 'Frais (FCFA)', 'Économie (FCFA)', 'Moyen retenu']);
+                fputcsv($handle, ['--- JOURNAL DÉTAILLÉ DES TRANSACTIONS AUDITÉES ---']);
+                fputcsv($handle, ['Date & Heure', 'Opération', 'Montant (FCFA)', 'Frais payés (FCFA)', 'Économie nette (FCFA)', 'Solution retenue', 'Statut']);
                 foreach ($optimizations as $opt) {
                     fputcsv($handle, [
                         $opt->created_at->format('d/m/Y H:i'),
-                        $opt->type === 'sending' ? 'Envoi' : 'Retrait',
+                        $opt->type === 'sending' ? 'Envoi d\'argent' : 'Retrait / Réception',
                         $opt->amount,
                         $opt->total_fee,
                         $opt->savings,
                         $opt->selectedMethod ? $opt->selectedMethod->name : 'Optimisé',
+                        'Optimisé avec succès',
                     ]);
                 }
 
                 fclose($handle);
             }, 200, $headers);
         }
-
-        $operatorProfile = $user->operatorProfile;
 
         return view('pages.premium.bilan', compact(
             'selectedMonth',
@@ -286,11 +301,9 @@ class PremiumController extends Controller
             'optVolume',
             'optSavings',
             'optFees',
-            'operatorOperations',
-            'opTotalEntrant',
-            'opTotalSortant',
-            'opNet',
-            'operatorProfile'
+            'optCount',
+            'avgSavingsRate',
+            'networkBreakdown'
         ));
     }
 

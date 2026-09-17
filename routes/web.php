@@ -41,7 +41,8 @@ Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/pricing', [PageController::class, 'pricing'])->name('pricing');
 
 Route::get('/calculator', [CalculatorController::class, 'index'])->name('calculator');
-Route::post('/calculator/result', [CalculatorController::class, 'result'])->name('calculator.result');
+Route::post('/calculator', [CalculatorController::class, 'calculate'])->name('calculator.calculate');
+Route::match(['get', 'post'], '/calculator/result', [CalculatorController::class, 'result'])->name('calculator.result');
 
 // Webhook (sans auth, appelé par FedaPay)
 Route::post('/payment/webhook', [PremiumController::class, 'webhook'])->name('payment.webhook');

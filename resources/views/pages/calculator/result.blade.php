@@ -70,8 +70,8 @@
                     <p class="mt-2 text-sm text-indigo-900">{{ $share_message }}</p>
                 </div>
                 <div class="flex gap-3">
-                    <button type="button" class="rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50" onclick="navigator.clipboard.writeText('{{ addslashes($share_message) }}')">
-                        Copier
+                    <button type="button" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50" onclick="copyToClipboard('{{ addslashes($share_message) }}', this)">
+                        <span>Copier</span>
                     </button>
                     <a href="https://wa.me/?text={{ urlencode($share_message) }}" target="_blank" rel="noopener" class="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600">
                         Envoyer via WhatsApp
@@ -270,8 +270,8 @@
                     <p class="mt-2 text-sm text-indigo-900">{{ $share_message }}</p>
                 </div>
                 <div class="flex gap-3">
-                    <button type="button" class="rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50" onclick="navigator.clipboard.writeText('{{ addslashes($share_message) }}')">
-                        Copier
+                    <button type="button" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50" onclick="copyToClipboard('{{ addslashes($share_message) }}', this)">
+                        <span>Copier</span>
                     </button>
                     <a href="https://wa.me/?text={{ urlencode($share_message) }}" target="_blank" rel="noopener" class="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600">
                         Envoyer via WhatsApp

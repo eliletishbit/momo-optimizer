@@ -17,10 +17,13 @@
 
     <!-- Scripts (Vite) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
 </head>
 <body>
     <!-- Le contenu de la page sera injecté ici -->
     @yield('content')
+
+    @livewireScripts
 
     <!-- PWA scripts (service worker registration) -->
     {!! PwaKit::scripts() !!}

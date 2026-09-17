@@ -10,13 +10,13 @@
 
     <!-- Formulaire -->
     <div class="rounded-3xl border border-gray-200 bg-white p-5 shadow-xl shadow-indigo-100/50 sm:p-8">
-        <form wire:submit="calculate" class="space-y-6">
+        <form action="{{ route('calculator.calculate') }}" method="POST" wire:submit="calculate" class="space-y-6">
             @csrf
 
             <div class="grid gap-6 md:grid-cols-2">
                 <div>
                     <label for="type" class="mb-2 block text-sm font-semibold text-gray-700">Type d'opération</label>
-                    <select wire:model="type" id="type" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                    <select wire:model="type" name="type" id="type" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100">
                         <option value="withdrawal">Retrait / réception</option>
                         <option value="sending">Envoi</option>
                     </select>
@@ -24,7 +24,7 @@
 
                 <div>
                     <label for="country" class="mb-2 block text-sm font-semibold text-gray-700">Pays</label>
-                    <select wire:model.live="country" id="country" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                    <select wire:model.live="country" name="country" id="country" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100">
                         @foreach($countries as $countryOption)
                             <option value="{{ $countryOption->code }}" @if($countryOption->code === ($country ?? 'BJ')) selected @endif>{{ $countryOption->name }} ({{ $countryOption->currency }})</option>
                         @endforeach
@@ -36,7 +36,7 @@
             <div>
                 <label for="amount" class="mb-2 block text-sm font-semibold text-gray-700">Montant</label>
                 <div class="relative">
-                    <input wire:model="amount" id="amount" type="number" min="1" step="1" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 pr-20" placeholder="Ex: 175000" />
+                    <input wire:model="amount" name="amount" id="amount" type="number" min="1" step="1" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 pr-20" placeholder="Ex: 175000" />
                     <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-gray-500">{{ $currency }}</span>
                 </div>
                 @error('amount')
@@ -49,7 +49,7 @@
                 <label for="sourceNetwork" class="mb-2 block text-sm font-semibold text-gray-700">
                     Réseau d'origine (si l'argent est déjà sur un réseau)
                 </label>
-                <select wire:model="selectedNetwork" id="sourceNetwork" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+                <select wire:model="selectedNetwork" name="selectedNetwork" id="sourceNetwork" class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-3 text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100">
                     <option value="">Source inconnue (optimisation générale)</option>
                     @foreach ($userNetworks as $name)
                         <option value="{{ $name }}">{{ $name }}</option>
@@ -120,8 +120,8 @@
                     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <p class="text-sm text-indigo-900">{{ $shareMessage }}</p>
                         <div class="flex gap-3">
-                            <button type="button" class="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700" onclick="navigator.clipboard.writeText('{{ addslashes($shareMessage) }}')">
-                                Copier
+                            <button type="button" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50" onclick="copyToClipboard('{{ addslashes($shareMessage) }}', this)">
+                                <span>Copier</span>
                             </button>
                             <a href="https://wa.me/?text={{ urlencode($shareMessage) }}" target="_blank" rel="noopener" class="rounded-xl bg-emerald-500 px-3 py-2 text-sm font-semibold text-white">
                                 WhatsApp
