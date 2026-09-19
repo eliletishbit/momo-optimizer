@@ -56,6 +56,7 @@ class PublicFeeOptimizer
                     'label' => $method->name . ' (1 opération directe)',
                     'fee' => $singleFee,
                     'net' => $amount - $singleFee,
+                    'amount_to_receive' => $amount,
                     'details' => [
                         ['network' => $method->name, 'amount' => $amount, 'fee' => $singleFee]
                     ],
@@ -74,6 +75,7 @@ class PublicFeeOptimizer
                         'label' => $method->name . ' en 2 tranches (optimisé)',
                         'fee' => $split2['fee'],
                         'net' => $amount - $split2['fee'],
+                        'amount_to_receive' => $amount,
                         'details' => $split2['details'],
                     ];
                 }
@@ -97,6 +99,7 @@ class PublicFeeOptimizer
                             'label' => $mA->name . ' + ' . $mB->name . ' (2 tranches)',
                             'fee' => $combined2['fee'],
                             'net' => $amount - $combined2['fee'],
+                            'amount_to_receive' => $amount,
                             'details' => $combined2['details'],
                         ];
                     }
@@ -115,6 +118,7 @@ class PublicFeeOptimizer
                         'label' => $method->name . ' en 3 tranches (ultra-optimisé)',
                         'fee' => $split3['fee'],
                         'net' => $amount - $split3['fee'],
+                        'amount_to_receive' => $amount,
                         'details' => $split3['details'],
                     ];
                 }
@@ -136,6 +140,7 @@ class PublicFeeOptimizer
                             'label' => $mA->name . ' + ' . $mB->name . ' (3 tranches)',
                             'fee' => $combined3['fee'],
                             'net' => $amount - $combined3['fee'],
+                            'amount_to_receive' => $amount,
                             'details' => $combined3['details'],
                         ];
                     }

@@ -233,7 +233,7 @@ class CalculatorController extends Controller
                 return redirect()->back()->with('error', 'L\'export CSV est réservé aux abonnés Premium et Pro.');
             }
 
-            $csvHeaders = ['Rang', 'Option', 'Frais total', 'Montant net', 'Détails'];
+            $csvHeaders = ['Rang', 'Option', 'Frais total', 'Montant à recevoir', 'Détails'];
             $csvRows = [];
 
             $allOptions = collect([$result['best'], ...$result['alternatives']]);
@@ -242,7 +242,7 @@ class CalculatorController extends Controller
                     $index + 1,
                     $option['label'],
                     $option['fee'],
-                    $option['net'],
+                    (float) (($option['net'] ?? 0) + ($option['fee'] ?? 0)),
                     implode(' | ', array_map(fn ($item) => $item['network'] . ':' . $item['amount'] . '(' . $item['fee'] . ')', $option['details'])),
                 ];
             }

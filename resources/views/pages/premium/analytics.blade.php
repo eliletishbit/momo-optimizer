@@ -53,11 +53,33 @@
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Statut du Compte</p>
             <div class="mt-2 flex items-center gap-2">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 uppercase">
-                    Actif Pro
-                </span>
+                @if(Auth::user()->is_admin)
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 uppercase">
+                        👑 Administrateur
+                    </span>
+                @elseif(Auth::user()->subscription === 'business')
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 uppercase">
+                        Actif Business
+                    </span>
+                @elseif(Auth::user()->subscription === 'pro')
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 uppercase">
+                        Actif Pro
+                    </span>
+                @else
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 uppercase">
+                        {{ ucfirst(Auth::user()->subscription ?? 'Free') }}
+                    </span>
+                @endif
             </div>
-            <p class="text-xs text-gray-500 mt-2">Accès illimité aux rapports avancés</p>
+            <p class="text-xs text-gray-500 mt-2">
+                @if(Auth::user()->is_admin)
+                    Accès complet administrateur
+                @elseif(in_array(Auth::user()->subscription, ['pro', 'business']))
+                    Accès illimité aux rapports avancés
+                @else
+                    Accès restreint
+                @endif
+            </p>
         </div>
     </div>
 

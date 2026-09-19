@@ -62,6 +62,7 @@ class FeeOptimizer
                     'label' => $method->name . ' seul',
                     'fee' => $fee,
                     'net' => $amount - $fee,
+                    'amount_to_receive' => $amount,
                     'details' => [['network' => $method->name, 'amount' => $amount, 'fee' => $fee, 'method_id' => $method->id]],
                 ];
             }
@@ -75,6 +76,7 @@ class FeeOptimizer
                         'label' => $method->name . ' fractionné (optimal)',
                         'fee' => $splitResult['fee'],
                         'net' => $amount - $splitResult['fee'],
+                        'amount_to_receive' => $amount,
                         'details' => $splitResult['details'],
                     ];
                 }
@@ -101,6 +103,7 @@ class FeeOptimizer
                             'label' => $methodA->name . ' + ' . $methodB->name,
                             'fee' => $combinedResult['fee'],
                             'net' => $amount - $combinedResult['fee'],
+                            'amount_to_receive' => $amount,
                             'details' => $combinedResult['details'],
                         ];
                     }
@@ -116,6 +119,7 @@ class FeeOptimizer
                         'label' => $method->name . ' en 3 tranches (ultra-optimisé)',
                         'fee' => $threeSplit['fee'],
                         'net' => $amount - $threeSplit['fee'],
+                        'amount_to_receive' => $amount,
                         'details' => $threeSplit['details'],
                     ];
                 }

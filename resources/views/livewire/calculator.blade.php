@@ -86,7 +86,8 @@
                 </div>
                 <div class="rounded-2xl border border-sky-100 bg-sky-50 p-5">
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Montant à recevoir</p>
-                    <p class="mt-2 text-xl font-black text-sky-900">{{ number_format((float) ($bestOption['net'] + $bestOption['fee'] ?? $amount), 0, ',', ' ') }} {{ $currency }}</p>
+                    <p class="mt-2 text-xl font-black text-sky-900">{{ number_format((float) ((isset($bestOption['net']) && isset($bestOption['fee'])) ? ($bestOption['net'] + $bestOption['fee']) : $amount), 0, ',', ' ') }} {{ $currency }}</p>
+                    <p class="mt-1 text-sm text-sky-700">Net + frais estimés</p>
                 </div>
                 <div class="rounded-2xl border border-violet-100 bg-violet-50 p-5">
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-violet-700">Économie</p>
@@ -152,7 +153,7 @@
                                     </div>
                                 </div>
                                 <div class="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-sm">
-                                    Net : {{ number_format((float) ($option['net'] ?? 0), 0, ',', ' ') }} {{ $currency }}
+                                    À recevoir : {{ number_format((float) (($option['net'] ?? 0) + ($option['fee'] ?? 0) > 0 ? ($option['net'] ?? 0) + ($option['fee'] ?? 0) : $amount), 0, ',', ' ') }} {{ $currency }}
                                 </div>
                             </div>
 

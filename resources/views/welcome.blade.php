@@ -124,7 +124,7 @@
                                         </div>
                                         <div class="text-right">
                                             <div class="text-base font-bold text-white">1 750 FCFA</div>
-                                            <div class="text-xs text-emerald-300">Montant net: 173 250</div>
+                                            <div class="text-xs text-emerald-300">Montant à recevoir: 175 000</div>
                                         </div>
                                     </div>
 
@@ -138,7 +138,7 @@
                                         </div>
                                         <div class="text-right">
                                             <div class="text-base font-bold text-white">2 000 FCFA</div>
-                                            <div class="text-xs text-slate-400">Montant net: 173 000</div>
+                                            <div class="text-xs text-slate-400">Montant à recevoir: 175 000</div>
                                         </div>
                                     </div>
 
@@ -152,7 +152,7 @@
                                         </div>
                                         <div class="text-right">
                                             <div class="text-base font-bold text-white">2 000 FCFA</div>
-                                            <div class="text-xs text-slate-400">Montant net: 173 000</div>
+                                            <div class="text-xs text-slate-400">Montant à recevoir: 175 000</div>
                                         </div>
                                     </div>
                                 </div>
@@ -182,7 +182,7 @@
                                 <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18V6m0 0 7 6 9-6v12l-9-6-7 6Z" /></svg>
                             </div>
                             <h3 class="text-xl font-semibold text-white">Comparaison instantanée</h3>
-                            <p class="mt-3 text-slate-300">Visualisez les frais, le montant net et la meilleure option avant de payer.</p>
+                            <p class="mt-3 text-slate-300">Visualisez les frais, le montant à recevoir et la meilleure option avant de payer.</p>
                         </div>
 
                         <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
@@ -266,7 +266,7 @@
                             <p class="mt-3 text-slate-300">Saisissez le montant à recevoir et obtenez le classement complet des options les moins chères.</p>
                             <ul class="mt-5 space-y-3 text-sm text-slate-200">
                                 <li class="flex items-center gap-3"><span class="h-2 w-2 rounded-full bg-emerald-400"></span> Classement par frais croissants</li>
-                                <li class="flex items-center gap-3"><span class="h-2 w-2 rounded-full bg-emerald-400"></span> Montant net estimé</li>
+                                <li class="flex items-center gap-3"><span class="h-2 w-2 rounded-full bg-emerald-400"></span> Montant à recevoir estimé</li>
                                 <li class="flex items-center gap-3"><span class="h-2 w-2 rounded-full bg-emerald-400"></span> Message prêt à partager</li>
                             </ul>
                         </div>
@@ -330,8 +330,8 @@
                                     <span class="font-semibold text-white">1 750 FCFA</span>
                                 </div>
                                 <div class="mt-3 flex items-center justify-between text-sm text-slate-300">
-                                    <span>Montant net</span>
-                                    <span class="font-semibold text-white">173 250 FCFA</span>
+                                    <span>Montant à recevoir</span>
+                                    <span class="font-semibold text-white">175 000 FCFA</span>
                                 </div>
                             </div>
                         </div>

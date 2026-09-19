@@ -49,9 +49,9 @@
             </div>
 
             <div class="rounded-2xl border border-sky-100 bg-sky-50 p-5 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Montant net</p>
-                <p class="mt-3 text-xl font-black text-sky-900">{{ number_format((float) $summary['options'][0]['net_amount'], 0, ',', ' ') }} FCFA</p>
-                <p class="mt-2 text-sm text-sky-700">Après frais estimés</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Montant à recevoir</p>
+                <p class="mt-3 text-xl font-black text-sky-900">{{ number_format((float) (($summary['options'][0]['net_amount'] ?? 0) + ($summary['options'][0]['total_fee'] ?? 0) > 0 ? ($summary['options'][0]['net_amount'] ?? 0) + ($summary['options'][0]['total_fee'] ?? 0) : $amount), 0, ',', ' ') }} FCFA</p>
+                <p class="mt-2 text-sm text-sky-700">Net + frais estimés</p>
             </div>
 
             <div class="rounded-2xl border border-violet-100 bg-violet-50 p-5 shadow-sm">
@@ -114,7 +114,7 @@
 
                             <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-4">
                                 <div class="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-sm">
-                                    Net : {{ number_format((float) $option['net_amount'], 0, ',', ' ') }} FCFA
+                                    À recevoir : {{ number_format((float) (($option['net_amount'] ?? 0) + ($option['total_fee'] ?? 0) > 0 ? ($option['net_amount'] ?? 0) + ($option['total_fee'] ?? 0) : $amount), 0, ',', ' ') }} FCFA
                                 </div>
                                 @if ($rank === 1)
                                     <span class="rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">Meilleur</span>
@@ -243,9 +243,9 @@
             </div>
 
             <div class="rounded-2xl border border-sky-100 bg-sky-50 p-5 shadow-sm">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Montant net</p>
-                <p class="mt-3 text-xl font-black text-sky-900">{{ number_format((float) ($summary['best']['net'] ?? $amount), 0, ',', ' ') }} FCFA</p>
-                <p class="mt-2 text-sm text-sky-700">Après frais estimés</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Montant à recevoir</p>
+                <p class="mt-3 text-xl font-black text-sky-900">{{ number_format((float) ((isset($summary['best']['net']) && isset($summary['best']['fee'])) ? ($summary['best']['net'] + $summary['best']['fee']) : $amount), 0, ',', ' ') }} FCFA</p>
+                <p class="mt-2 text-sm text-sky-700">Net + frais estimés</p>
             </div>
 
             <div class="rounded-2xl border border-violet-100 bg-violet-50 p-5 shadow-sm">
@@ -315,7 +315,7 @@
 
                             <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-4">
                                 <div class="rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-emerald-700 shadow-sm">
-                                    Net : {{ number_format((float) ($option['net'] ?? 0), 0, ',', ' ') }} FCFA
+                                    À recevoir : {{ number_format((float) (($option['net'] ?? 0) + ($option['fee'] ?? 0) > 0 ? ($option['net'] ?? 0) + ($option['fee'] ?? 0) : $amount), 0, ',', ' ') }} FCFA
                                 </div>
                                 @if ($rank === 1)
                                     <span class="rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">Meilleur</span>
