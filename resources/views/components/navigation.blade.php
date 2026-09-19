@@ -46,11 +46,9 @@
                             </x-nav-link>
                         @endif
 
-                        @if(auth()->user()->is_admin || auth()->user()->hasActivePro() || auth()->user()->hasActiveBusiness())
-                            <x-nav-link :href="route('pro.analytics')" :active="request()->routeIs('pro.*')">
-                                💎 Pro
-                            </x-nav-link>
-                        @endif
+                        <x-nav-link :href="route('pro.analytics')" :active="request()->routeIs('pro.*')">
+                            💎 Pro
+                        </x-nav-link>
                     @endauth
                 </div>
             </div>
@@ -153,11 +151,9 @@
                     </x-responsive-nav-link>
                 @endif
 
-                @if(auth()->user()->is_admin || auth()->user()->hasActivePro() || auth()->user()->hasActiveBusiness())
-                    <x-responsive-nav-link :href="route('pro.analytics')" :active="request()->routeIs('pro.*')">
-                        💎 Espace Pro
-                    </x-responsive-nav-link>
-                @endif
+                <x-responsive-nav-link :href="route('pro.analytics')" :active="request()->routeIs('pro.*')">
+                    💎 Espace Pro
+                </x-responsive-nav-link>
             @endauth
         </div>
 

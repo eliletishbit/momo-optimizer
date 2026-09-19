@@ -1,5 +1,12 @@
 import './bootstrap';
 
+import Alpine from 'alpinejs';
+
+if (!window.Alpine) {
+    window.Alpine = Alpine;
+    Alpine.start();
+}
+
 // Fonction universelle de copie avec feedback visuel ("Copié !")
 window.copyToClipboard = function (text, btnElement) {
     if (!text) return;

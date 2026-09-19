@@ -250,18 +250,20 @@ class User extends Authenticatable
 
     public function hasActivePaidPlan(string $plan): bool
     {
-        $activeSubscription = $this->subscriptions()
-            ->where('status', 'active')
-            ->where('end_date', '>', now())
-            ->where('plan', $plan)
-            ->first();
-
-        if ($activeSubscription) {
-            return true;
+        // 1. Vérification sur le champ direct du modèle User
+        if ($this->subscription === $plan) {
+            return $this->subscription_expires_at === null || $this->subscription_expires_at->isFuture();
         }
 
-        if ($this->subscription === $plan && $this->subscription_expires_at !== null) {
-            return $this->subscription_expires_at->isFuture();
+        // 2. Vérification sur la souscription active la plus récente
+        $latestActive = $this->subscriptions()
+            ->where('status', 'active')
+            ->where('end_date', '>', now())
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($latestActive && $latestActive->plan === $plan) {
+            return true;
         }
 
         return false;

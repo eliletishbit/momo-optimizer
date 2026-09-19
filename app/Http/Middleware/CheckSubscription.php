@@ -21,8 +21,12 @@ class CheckSubscription
             $hasRequiredPlan = $this->userHasPlan($user, $requiredPlan);
             
             if (!$hasRequiredPlan) {
-                $planName = ucfirst(str_replace('_', ' ', $requiredPlan));
-                
+                if ($requiredPlan === 'pro') {
+                    return redirect()->route('pricing')->with('error', 
+                        "Veuillez passer à l'abonnement Pro pour utiliser cette fonctionnalité."
+                    );
+                }
+
                 if ($user->hasActivePaidSubscription()) {
                     return redirect()->route('pricing')->with('error', 
                         "Cette fonctionnalité nécessite un abonnement {$planName}. Passez à un forfait supérieur."

@@ -107,6 +107,20 @@ class FeeOptimizer
                 }
             }
 
+            // 4. Fractionnement en 3 tranches (ultra-optimal)
+            foreach ($methods as $method) {
+                $threeSplit = $this->optimalThreeSplit($method->receiptFees, $amount, $method->name, $method->id);
+                if ($threeSplit) {
+                    $allOptions[] = [
+                        'type' => 'three_tier',
+                        'label' => $method->name . ' en 3 tranches (ultra-optimisé)',
+                        'fee' => $threeSplit['fee'],
+                        'net' => $amount - $threeSplit['fee'],
+                        'details' => $threeSplit['details'],
+                    ];
+                }
+            }
+
             // TRI PAR FRAIS CROISSANTS
             usort($allOptions, fn($a, $b) => $a['fee'] <=> $b['fee']);
 
@@ -371,6 +385,71 @@ class FeeOptimizer
         }
 
         return $bestResult;
+    }
+
+    /**
+     * Fractionnement optimal en 3 tranches sur un seul réseau
+     */
+    private function optimalThreeSplit($fees, float $amount, string $networkName, string $methodId): ?array
+    {
+        $fees = $fees->sortBy('max_amount')->values();
+        if ($fees->isEmpty() || $amount < 300) return null;
+
+        $singleFee = $this->getFeeForAmount($fees, $amount);
+        $bestFee = $singleFee;
+        $bestDetails = null;
+
+        // 1. Découpage en 3 tiers égaux
+        $third = round($amount / 3);
+        $rem = $amount - (2 * $third);
+        if ($third >= 100 && $rem >= 100) {
+            $f1 = $this->getFeeForAmount($fees, $third);
+            $f2 = $this->getFeeForAmount($fees, $third);
+            $f3 = $this->getFeeForAmount($fees, $rem);
+            $tot = $f1 + $f2 + $f3;
+            if ($tot < $bestFee) {
+                $bestFee = $tot;
+                $bestDetails = [
+                    ['network' => $networkName, 'amount' => $third, 'fee' => $f1, 'method_id' => $methodId],
+                    ['network' => $networkName, 'amount' => $third, 'fee' => $f2, 'method_id' => $methodId],
+                    ['network' => $networkName, 'amount' => $rem, 'fee' => $f3, 'method_id' => $methodId],
+                ];
+            }
+        }
+
+        // 2. Découpage combinant des seuils de paliers
+        $tierMaxes = $fees->pluck('max_amount')->filter(fn($m) => $m > 0 && $m < $amount)->values()->all();
+        $tierCount = count($tierMaxes);
+
+        for ($i = 0; $i < $tierCount; $i++) {
+            $t1 = (float) $tierMaxes[$i];
+            for ($j = $i; $j < $tierCount; $j++) {
+                $t2 = (float) $tierMaxes[$j];
+                if ($t1 + $t2 < $amount) {
+                    $t3 = $amount - $t1 - $t2;
+                    if ($t3 >= 100) {
+                        $f1 = $this->getFeeForAmount($fees, $t1);
+                        $f2 = $this->getFeeForAmount($fees, $t2);
+                        $f3 = $this->getFeeForAmount($fees, $t3);
+                        $tot = $f1 + $f2 + $f3;
+                        if ($tot < $bestFee) {
+                            $bestFee = $tot;
+                            $bestDetails = [
+                                ['network' => $networkName, 'amount' => $t1, 'fee' => $f1, 'method_id' => $methodId],
+                                ['network' => $networkName, 'amount' => $t2, 'fee' => $f2, 'method_id' => $methodId],
+                                ['network' => $networkName, 'amount' => $t3, 'fee' => $f3, 'method_id' => $methodId],
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        if ($bestDetails && $bestFee < $singleFee) {
+            return ['fee' => $bestFee, 'details' => $bestDetails];
+        }
+
+        return null;
     }
 
     /**

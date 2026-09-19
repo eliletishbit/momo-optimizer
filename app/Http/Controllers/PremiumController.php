@@ -63,7 +63,7 @@ class PremiumController extends Controller
 
         // 🔒 Contrôle d'accès strict : réservé aux abonnés Pro, Business et Administrateurs
         if (!$user->is_admin && !$user->hasActivePro() && !$user->hasActiveBusiness()) {
-            return redirect()->route('pricing')->with('error', 'Cette fonctionnalité est exclusivement réservée aux abonnés Pro et Business.');
+            return redirect()->route('pricing')->with('error', 'Veuillez passer à l\'abonnement Pro pour utiliser cette fonctionnalité.');
         }
 
         // 1. Statistiques globales d'optimisation
@@ -196,7 +196,7 @@ class PremiumController extends Controller
 
         // 🔒 Contrôle d'accès strict : réservé aux abonnés Pro, Business et Administrateurs
         if (!$user->is_admin && !$user->hasActivePro() && !$user->hasActiveBusiness()) {
-            return redirect()->route('pricing')->with('error', 'Cette fonctionnalité est exclusivement réservée aux abonnés Pro et Business.');
+            return redirect()->route('pricing')->with('error', 'Veuillez passer à l\'abonnement Pro pour utiliser cette fonctionnalité.');
         }
 
         // Mois sélectionné (ex: 2026-09)

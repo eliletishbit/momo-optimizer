@@ -5,68 +5,83 @@ namespace App\Http\Controllers;
 use App\Models\Method;
 use App\Services\PublicFeeOptimizer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class PublicCalculatorController extends Controller
 {
-    private const FREE_TRIALS = 3;
+    public const FREE_TRIALS = 3;
+
+    /**
+     * Calcule l'utilisation actuelle via IP, empreinte d'appareil et session
+     */
+    private function getUsageTracker(Request $request): array
+    {
+        $ip = $request->ip() ?: '127.0.0.1';
+        $today = now()->format('Y-m-d');
+        
+        // Empreinte d'appareil persistante (cookie 1 an)
+        $deviceToken = $request->cookie('momo_device_uid');
+        if (!$deviceToken) {
+            $deviceToken = (string) Str::uuid();
+        }
+
+        $ipKey = 'pub_calc_ip_' . md5($ip . '_' . $today);
+        $deviceKey = 'pub_calc_dev_' . md5($deviceToken . '_' . $today);
+        $sessionKey = 'pub_calc_sess_' . $today;
+
+        $ipCount = (int) Cache::get($ipKey, 0);
+        $devCount = (int) Cache::get($deviceKey, 0);
+        $sessCount = (int) Session::get($sessionKey, 0);
+
+        // Le compteur effectif prend le maximum absolu pour empêcher le contournement
+        $effectiveCount = max($ipCount, $devCount, $sessCount);
+        $remaining = max(0, self::FREE_TRIALS - $effectiveCount);
+
+        return [
+            'count' => $effectiveCount,
+            'remaining' => $remaining,
+            'device_token' => $deviceToken,
+            'ip_key' => $ipKey,
+            'device_key' => $deviceKey,
+            'session_key' => $sessionKey,
+        ];
+    }
 
     /**
      * Affiche le formulaire du calculateur public
      */
-    public function index()
+    public function index(Request $request)
     {
-        // ✅ Clé de session sécurisée : IP + sel de l'application
-        $ip = request()->ip();
-        $sessionKey = 'public_calculator_trials_' . md5($ip . config('app.key'));
+        $tracker = $this->getUsageTracker($request);
 
-        $trialData = Session::get($sessionKey, [
-            'count' => 0,
-            'reset_at' => now()->format('Y-m-d'),
-        ]);
-
-        // ✅ Réinitialisation quotidienne (commenter pour des essais à vie)
-        if ($trialData['reset_at'] !== now()->format('Y-m-d')) {
-            $trialData = ['count' => 0, 'reset_at' => now()->format('Y-m-d')];
-            Session::put($sessionKey, $trialData);
-        }
-
-        $remaining = max(0, self::FREE_TRIALS - $trialData['count']);
-        $canCalculate = $remaining > 0;
-
-        return view('public.calculator', [
-            'remaining' => $remaining,
-            'canCalculate' => $canCalculate,
+        $response = response()->view('public.calculator', [
+            'remaining' => $tracker['remaining'],
+            'canCalculate' => $tracker['remaining'] > 0,
             'maxTrials' => self::FREE_TRIALS,
         ]);
+
+        // Attacher le cookie d'appareil persistant s'il n'existe pas encore
+        if (!$request->cookie('momo_device_uid')) {
+            $response->withCookie(Cookie::make('momo_device_uid', $tracker['device_token'], 525600, '/', null, false, false));
+        }
+
+        return $response;
     }
 
     /**
-     * Effectue le calcul et enregistre l'essai
+     * Effectue le calcul et enregistre l'essai de façon inviolable (IP + Device)
      */
     public function calculate(Request $request, PublicFeeOptimizer $optimizer)
     {
-        $ip = request()->ip();
-        $sessionKey = 'public_calculator_trials_' . md5($ip . config('app.key'));
+        $tracker = $this->getUsageTracker($request);
 
-        $trialData = Session::get($sessionKey, [
-            'count' => 0,
-            'reset_at' => now()->format('Y-m-d'),
-        ]);
-
-        // Réinitialisation quotidienne (commenter pour essais à vie)
-        if ($trialData['reset_at'] !== now()->format('Y-m-d')) {
-            $trialData = ['count' => 0, 'reset_at' => now()->format('Y-m-d')];
-            Session::put($sessionKey, $trialData);
-        }
-
-        $trialCount = $trialData['count'];
-        $remaining = self::FREE_TRIALS - $trialCount;
-
-        if ($remaining <= 0) {
+        if ($tracker['remaining'] <= 0) {
             return redirect()->route('public.calculator')
-                ->with('error', 'Vous avez utilisé vos 3 essais gratuits. Créez un compte pour débloquer plus de calculs !');
+                ->with('error', 'Vous avez atteint la limite de ' . self::FREE_TRIALS . ' calculs gratuits sur cet appareil ou cette connexion. Créez un compte gratuit pour continuer à optimiser sans limite !');
         }
 
         $validated = $request->validate([
@@ -79,7 +94,7 @@ class PublicCalculatorController extends Controller
         $country = $validated['country'] ?? 'BJ';
         $type = $validated['type'] ?? 'withdrawal';
 
-        // ✅ Récupérer les méthodes disponibles (PostgreSQL)
+        // Récupérer les méthodes disponibles actives (PostgreSQL)
         $methodIds = Method::whereRaw('is_active = true')
             ->where(function ($query) use ($country) {
                 $query->where('country_code', $country)
@@ -93,24 +108,25 @@ class PublicCalculatorController extends Controller
                 ->with('error', 'Aucune méthode de paiement disponible pour ce pays.');
         }
 
-        $result = $optimizer->optimizeWithdrawal($amount, $methodIds, $country);
+        // Optimisation multi-niveaux (1 tranche, 2 tranches, 3 tranches)
+        $result = $optimizer->optimizeWithdrawal($amount, $methodIds, $country, $type);
 
         if (isset($result['error'])) {
             return redirect()->route('public.calculator')
                 ->with('error', $result['error']);
         }
 
-        // ✅ Incrémenter le compteur d'essais
-        Session::put($sessionKey, [
-            'count' => $trialCount + 1,
-            'reset_at' => now()->format('Y-m-d'),
-        ]);
+        // Incrémenter atomiquement et synchroniser l'ensemble des verrous (IP + Device + Session)
+        $newCount = $tracker['count'] + 1;
+        $endOfDay = now()->endOfDay();
+        Cache::put($tracker['ip_key'], $newCount, $endOfDay);
+        Cache::put($tracker['device_key'], $newCount, $endOfDay);
+        Session::put($tracker['session_key'], $newCount);
 
-        $newTrialData = Session::get($sessionKey);
-        $newRemaining = max(0, self::FREE_TRIALS - $newTrialData['count']);
+        $newRemaining = max(0, self::FREE_TRIALS - $newCount);
         $hasRemaining = $newRemaining > 0;
 
-        // ✅ Préparer les options pour la vue (pagination)
+        // Préparer les options pour la vue (pagination)
         $options = [];
         if (isset($result['best']) && isset($result['alternatives'])) {
             $allOptions = array_merge([$result['best']], $result['alternatives']);
@@ -133,7 +149,7 @@ class PublicCalculatorController extends Controller
             ? 'Bonjour, je dois ' . ($type === 'sending' ? 'envoyer' : 'recevoir') . ' ' . number_format((int) $amount, 0, ',', ' ') . ' FCFA. Le meilleur choix est ' . $bestOption['label'] . ' avec des frais estimés à ' . number_format((float) $bestOption['fee'], 0, ',', ' ') . ' FCFA.'
             : null;
 
-        return view('public.calculator-result', [
+        $response = response()->view('public.calculator-result', [
             'result' => $result,
             'amount' => $amount,
             'country' => $country,
@@ -149,18 +165,21 @@ class PublicCalculatorController extends Controller
             'message' => null,
             'can_export' => false,
         ]);
+
+        return $response->withCookie(Cookie::make('momo_device_uid', $tracker['device_token'], 525600, '/', null, false, false));
     }
 
     /**
-     * Réinitialiser les essais (pour les tests)
+     * Réinitialiser les essais (pour tests et débogage)
      */
-    public function resetTrials()
+    public function resetTrials(Request $request)
     {
-        $ip = request()->ip();
-        $sessionKey = 'public_calculator_trials_' . md5($ip . config('app.key'));
-        Session::forget($sessionKey);
+        $tracker = $this->getUsageTracker($request);
+        Cache::forget($tracker['ip_key']);
+        Cache::forget($tracker['device_key']);
+        Session::forget($tracker['session_key']);
 
         return redirect()->route('public.calculator')
-            ->with('success', 'Essais réinitialisés !');
+            ->with('success', 'Essais réinitialisés pour cette connexion et cet appareil !');
     }
 }
