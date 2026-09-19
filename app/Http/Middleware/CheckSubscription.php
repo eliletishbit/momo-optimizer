@@ -82,26 +82,13 @@ class CheckSubscription
 
         $requiredLevel = $hierarchy[$plan] ?? 0;
 
-        // 1. Vérification sur le champ direct du modèle User
-        if ($user->subscription && isset($hierarchy[$user->subscription])) {
-            $userLevel = $hierarchy[$user->subscription];
-            if ($userLevel >= $requiredLevel) {
-                // Si une date d'expiration existe, elle doit être dans le futur
-                if ($user->subscription_expires_at === null || $user->subscription_expires_at->isFuture()) {
-                    return true;
-                }
-            }
-        }
+        // Le forfait actif est défini par le champ direct subscription du modèle User
+        $userPlan = $user->subscription ?? 'free';
+        $userLevel = $hierarchy[$userPlan] ?? 0;
 
-        // 2. Vérification dans la table des souscriptions actives
-        $activePlans = $user->subscriptions()
-            ->where('status', 'active')
-            ->where('end_date', '>', now())
-            ->pluck('plan')
-            ->toArray();
-
-        foreach ($activePlans as $p) {
-            if (($hierarchy[$p] ?? 0) >= $requiredLevel) {
+        if ($userLevel >= $requiredLevel) {
+            // Si une date d'expiration existe, elle doit être dans le futur
+            if ($user->subscription_expires_at === null || $user->subscription_expires_at->isFuture()) {
                 return true;
             }
         }

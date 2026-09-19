@@ -250,20 +250,9 @@ class User extends Authenticatable
 
     public function hasActivePaidPlan(string $plan): bool
     {
-        // 1. Vérification sur le champ direct du modèle User
+        // Le forfait actif est strictement défini par le champ subscription du modèle User
         if ($this->subscription === $plan) {
             return $this->subscription_expires_at === null || $this->subscription_expires_at->isFuture();
-        }
-
-        // 2. Vérification sur la souscription active la plus récente
-        $latestActive = $this->subscriptions()
-            ->where('status', 'active')
-            ->where('end_date', '>', now())
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        if ($latestActive && $latestActive->plan === $plan) {
-            return true;
         }
 
         return false;

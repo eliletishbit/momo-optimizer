@@ -92,20 +92,37 @@ class HistoryController extends Controller
     }
 
     /**
-     * Supprimer une optimisation (admin uniquement).
+     * Supprimer une optimisation de son historique personnel.
      */
     public function destroy($id): \Illuminate\Http\RedirectResponse
     {
         /** @var User $user */
         $user = Auth::user();
 
-        if (!$user || !$user->isAdmin()) {
-            abort(403, 'Vous n\'avez pas les droits pour supprimer cette optimisation.');
+        if (!$user) {
+            abort(403, 'Vous devez être connecté.');
         }
 
         $optimization = $user->optimizationHistory()->findOrFail($id);
         $optimization->delete();
 
-        return redirect()->route('history')->with('success', 'Optimisation supprimée avec succès.');
+        return redirect()->route('history')->with('success', 'Optimisation supprimée de votre historique avec succès.');
+    }
+
+    /**
+     * Réinitialiser complètement son historique d'optimisations.
+     */
+    public function clear(): \Illuminate\Http\RedirectResponse
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        if (!$user) {
+            abort(403, 'Vous devez être connecté.');
+        }
+
+        $user->optimizationHistory()->delete();
+
+        return redirect()->route('history')->with('success', 'Votre historique d\'optimisations a été réinitialisé avec succès.');
     }
 }

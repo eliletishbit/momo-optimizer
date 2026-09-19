@@ -95,6 +95,8 @@ Route::middleware(['auth'])->group(function () {
     // ✅ History : accessible à tous les abonnés (Premium, Pro, Pay As You Go)
     Route::middleware(['subscription'])->group(function () {
         Route::get('/history', [HistoryController::class, 'index'])->name('history');
+        Route::delete('/history/{id}', [HistoryController::class, 'destroy'])->name('history.destroy');
+        Route::post('/history/clear', [HistoryController::class, 'clear'])->name('history.clear');
     });
 
     // ✅ ROUTES PREMIUM : UNIQUEMENT les abonnés Premium
